@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "938138367374",
+    "project_id": "fuma25-chatapp",
+    "storage_bucket": "fuma25-chatapp.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:938138367374:android:f4e7fe1ff73fd3f04460df",
+        "android_client_info": {
+          "package_name": "com.example.fuma25_chatapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBG5DvM37AtnBw_dnfPfp-cvWYnPg55qhc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
