@@ -5,9 +5,9 @@ data class Message(
     var userId: String = "",
     var name: String = "",
     var text: String = "",
-    var time: Double = 0.0){
-    constructor():this("","","","",0.0)
-}
+    var time: Long = System.currentTimeMillis()
+    )
+
 // id for user, name for the ui part to show who sent message, message, and time for then the message was sent
 
 
