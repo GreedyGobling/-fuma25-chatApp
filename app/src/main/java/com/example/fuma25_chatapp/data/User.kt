@@ -1,4 +1,4 @@
-package com.example.fuma25_chatapp.model
+package com.example.fuma25_chatapp.data
 
 data class User(
     val uid: String = "",

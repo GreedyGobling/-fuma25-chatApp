@@ -6,7 +6,7 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.fuma25_chatapp.R
-import com.example.fuma25_chatapp.model.ChatRoom
+import com.example.fuma25_chatapp.data.ChatRoom
 
 class ChatRoomsAdapter(
     private val onClick: (ChatRoom) -> Unit

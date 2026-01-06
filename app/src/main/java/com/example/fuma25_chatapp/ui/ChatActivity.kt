@@ -1,4 +1,4 @@
-package com.example.fuma25_chatapp
+package com.example.fuma25_chatapp.ui
 
 import android.os.Bundle
 import android.widget.EditText
@@ -7,8 +7,8 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.fuma25_chatapp.R
 import com.example.fuma25_chatapp.repository.ChatRepository
-import com.example.fuma25_chatapp.ui.MessagesAdapter
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.ListenerRegistration
 

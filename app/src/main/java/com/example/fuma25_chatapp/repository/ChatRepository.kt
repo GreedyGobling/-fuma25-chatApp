@@ -1,7 +1,7 @@
 package com.example.fuma25_chatapp.repository
 
-import com.example.fuma25_chatapp.model.ChatRoom
-import com.example.fuma25_chatapp.model.Message
+import com.example.fuma25_chatapp.data.ChatRoom
+import com.example.fuma25_chatapp.data.Message
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 
