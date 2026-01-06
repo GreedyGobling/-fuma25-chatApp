@@ -3,59 +3,88 @@ package com.example.fuma25_chatapp
 import android.os.Bundle
 import android.widget.EditText
 import android.widget.ImageButton
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.fuma25_chatapp.repository.ChatRepository
 import com.example.fuma25_chatapp.ui.MessagesAdapter
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.ListenerRegistration
 
 class ChatActivity : AppCompatActivity() {
 
     private val auth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
     private val chatRepository: ChatRepository by lazy { ChatRepository() }
 
+    private var messagesListener: ListenerRegistration? = null
+
     private lateinit var recyclerView: RecyclerView
     private lateinit var messageInput: EditText
     private lateinit var sendButton: ImageButton
-
     private lateinit var adapter: MessagesAdapter
 
-    // Temporary hardcoded chat room (we will improve this later)
-    private val chatRoomId = "global_chat"
+    private lateinit var chatRoomId: String
+    private var chatRoomTitle: String = "Chat"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_chat)
 
+        chatRoomId = intent.getStringExtra(EXTRA_CHAT_ROOM_ID) ?: ""
+        chatRoomTitle = intent.getStringExtra(EXTRA_CHAT_ROOM_TITLE) ?: "Chat"
+
+        if (chatRoomId.isBlank()) {
+            Toast.makeText(this, "Missing chatRoomId", Toast.LENGTH_LONG).show()
+            finish()
+            return
+        }
+
+        title = chatRoomTitle
+
         recyclerView = findViewById(R.id.recyclerViewMessages)
         messageInput = findViewById(R.id.editTextMessage)
         sendButton = findViewById(R.id.buttonSend)
 
-        adapter = MessagesAdapter(auth.currentUser?.uid ?: "")
+        val currentUserId = auth.currentUser?.uid ?: ""
+        adapter = MessagesAdapter(currentUserId)
 
-        recyclerView.layoutManager = LinearLayoutManager(this)
+        recyclerView.layoutManager = LinearLayoutManager(this).apply {
+            stackFromEnd = true // Keeps the newest messages at the bottom
+        }
         recyclerView.adapter = adapter
-
-        listenForMessages()
 
         sendButton.setOnClickListener {
             sendMessage()
         }
     }
 
-    private fun listenForMessages() {
-        chatRepository.listenToMessages(chatRoomId) { messages ->
+    override fun onStart() {
+        super.onStart()
+
+        // Start listening to messages in real time
+        messagesListener?.remove()
+        messagesListener = chatRepository.listenToMessages(chatRoomId) { messages ->
             adapter.submitList(messages)
-            recyclerView.scrollToPosition(messages.size - 1)
+
+            if (messages.isNotEmpty()) {
+                recyclerView.scrollToPosition(messages.size - 1)
+            }
         }
     }
 
-    private fun sendMessage() {
-        val text = messageInput.text.toString().trim()
-        val userId = auth.currentUser?.uid ?: return
+    override fun onStop() {
+        super.onStop()
+        // Always remove listeners to avoid memory leaks
+        messagesListener?.remove()
+        messagesListener = null
+    }
 
-        if (text.isEmpty()) return
+    private fun sendMessage() {
+        val userId = auth.currentUser?.uid ?: return
+        val text = messageInput.text.toString().trim()
+
+        if (text.isBlank()) return
 
         chatRepository.sendMessage(
             chatRoomId = chatRoomId,
@@ -64,5 +93,10 @@ class ChatActivity : AppCompatActivity() {
         )
 
         messageInput.text.clear()
+    }
+
+    companion object {
+        const val EXTRA_CHAT_ROOM_ID = "extra_chat_room_id"
+        const val EXTRA_CHAT_ROOM_TITLE = "extra_chat_room_title"
     }
 }

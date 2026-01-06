@@ -20,9 +20,18 @@ class MessagesAdapter(
         notifyDataSetChanged()
     }
 
+    override fun getItemViewType(position: Int): Int {
+        return if (messages[position].senderId == currentUserId) VIEW_TYPE_ME else VIEW_TYPE_OTHER
+    }
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MessageViewHolder {
-        val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.item_message, parent, false)
+        val layoutId = if (viewType == VIEW_TYPE_ME) {
+            R.layout.item_message_me
+        } else {
+            R.layout.item_message_other
+        }
+
+        val view = LayoutInflater.from(parent.context).inflate(layoutId, parent, false)
         return MessageViewHolder(view)
     }
 
@@ -32,11 +41,16 @@ class MessagesAdapter(
 
     override fun getItemCount(): Int = messages.size
 
-    inner class MessageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+    class MessageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val textMessage: TextView = itemView.findViewById(R.id.textMessage)
 
         fun bind(message: Message) {
             textMessage.text = message.text
         }
+    }
+
+    companion object {
+        private const val VIEW_TYPE_ME = 1
+        private const val VIEW_TYPE_OTHER = 2
     }
 }
