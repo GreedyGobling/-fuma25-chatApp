@@ -3,7 +3,6 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <application
-        android:name=".App"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -14,7 +13,6 @@
         android:theme="@style/Theme.Fuma25chatapp"
         tools:targetApi="31">
 
-        <!-- Login screen (launcher) -->
         <activity
             android:name=".LoginActivity"
             android:exported="true">
@@ -24,18 +22,12 @@
             </intent-filter>
         </activity>
 
-        <!-- Main screen -->
         <activity
             android:name=".MainActivity"
             android:exported="false" />
 
-        <!-- Optional future screens -->
         <activity
-            android:name=".ui.UsersActivity"
-            android:exported="false" />
-
-        <activity
-            android:name=".ui.ChatActivity"
+            android:name=".ChatActivity"
             android:exported="false" />
 
     </application>

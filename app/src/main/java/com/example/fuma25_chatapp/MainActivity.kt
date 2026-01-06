@@ -79,7 +79,7 @@ class MainActivity : AppCompatActivity() {
 
         try {
             startActivity(intent)
-        } catch (e: ActivityNotFoundException) {
+        } catch (_: ActivityNotFoundException) {
             Toast.makeText(
                 this,
                 "ChatActivity not found yet. Create ChatActivity to open chats.",
