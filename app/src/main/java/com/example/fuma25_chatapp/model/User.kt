@@ -1,4 +1,7 @@
 package com.example.fuma25_chatapp.model
 
-class User {
-}
+data class User(
+    val uid: String = "",
+    val email: String = "",
+    val name: String = ""
+)
