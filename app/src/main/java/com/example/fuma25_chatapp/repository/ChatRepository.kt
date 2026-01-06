@@ -2,6 +2,7 @@ package com.example.fuma25_chatapp.repository
 
 import com.example.fuma25_chatapp.data.ChatRoom
 import com.example.fuma25_chatapp.data.Message
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 
@@ -40,7 +41,7 @@ class ChatRepository {
         return db.collection("chat-rooms")
             .document(chatRoomId)
             .collection("messages")
-            .orderBy("timestamp")
+            .orderBy("createdAt")
             .addSnapshotListener { snapshot, error ->
                 if (error != null || snapshot == null) return@addSnapshotListener
 
@@ -49,16 +50,17 @@ class ChatRepository {
                         id = doc.id,
                         text = doc.getString("text") ?: "",
                         senderId = doc.getString("senderId") ?: "",
-                        timestamp = doc.getLong("timestamp") ?: 0L
+                        createdAt = doc.getTimestamp("createdAt")
                     )
                 }
+
                 onUpdate(messages)
             }
     }
 
     /**
      * Sends a new message to the given chat room.
-     * Pro: provides success + error callbacks.
+     * Uses server time for createdAt to ensure consistent ordering across devices.
      */
     fun sendMessage(
         chatRoomId: String,
@@ -76,7 +78,7 @@ class ChatRepository {
         val message = mapOf(
             "text" to trimmed,
             "senderId" to senderId,
-            "timestamp" to System.currentTimeMillis()
+            "createdAt" to FieldValue.serverTimestamp()
         )
 
         db.collection("chat-rooms")

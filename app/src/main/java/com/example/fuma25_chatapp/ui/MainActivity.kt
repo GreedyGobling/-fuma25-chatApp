@@ -2,8 +2,9 @@ package com.example.fuma25_chatapp.ui
 
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
-import androidx.activity.enableEdgeToEdge
+import android.view.Menu
+import android.view.MenuItem
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -17,7 +18,7 @@ import com.google.firebase.firestore.ListenerRegistration
 class MainActivity : AppCompatActivity() {
 
     private val auth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
-    private val chatRepository: ChatRepository by lazy { ChatRepository() }
+    private val repository: ChatRepository by lazy { ChatRepository() }
 
     private var roomsListener: ListenerRegistration? = null
 
@@ -27,48 +28,80 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+
+        // Redirect if not authenticated
+        if (auth.currentUser == null) {
+            goToLogin()
+            return
+        }
+
         setContentView(R.layout.activity_main)
 
         toolbar = findViewById(R.id.toolbar)
-
         recyclerView = findViewById(R.id.recyclerView)
-        recyclerView.layoutManager = LinearLayoutManager(this)
+
+        setSupportActionBar(toolbar)
 
         adapter = ChatRoomsAdapter { room ->
             openChatRoom(room)
         }
+
+        recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = adapter
     }
 
     override fun onStart() {
         super.onStart()
 
-        val currentUser = auth.currentUser
-        if (currentUser == null) {
-            // Not signed in -> go to login screen
-            startActivity(Intent(this, LoginActivity::class.java))
-            finish()
+        // If the user got signed out while the app was in background
+        if (auth.currentUser == null) {
+            goToLogin()
             return
         }
 
-        // Start listening to chat rooms in real time
-        roomsListener?.remove()
-        roomsListener = chatRepository.listenToChatRooms(currentUser.uid) { rooms ->
-            Log.d(TAG, "Chat rooms updated: ${rooms.size}")
-            adapter.submitList(rooms)
-        }
+        startListeningToRooms()
     }
 
     override fun onStop() {
         super.onStop()
-        // Always remove listeners to avoid memory leaks
+        // Remove Firestore listener to avoid memory leaks
         roomsListener?.remove()
         roomsListener = null
     }
 
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menu.add(0, MENU_LOGOUT, 0, "Logout")
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            MENU_LOGOUT -> {
+                logout()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
+
+    private fun startListeningToRooms() {
+        if (roomsListener != null) return
+
+        val userId = auth.currentUser?.uid.orEmpty()
+        if (userId.isBlank()) {
+            goToLogin()
+            return
+        }
+
+        roomsListener = repository.listenToChatRooms(
+            userId = userId,
+            onUpdate = { rooms: List<ChatRoom> ->
+                adapter.submitList(rooms)
+            }
+        )
+    }
+
     private fun openChatRoom(room: ChatRoom) {
-        // Open ChatActivity and pass the selected chat room data
         val intent = Intent(this, ChatActivity::class.java).apply {
             putExtra(ChatActivity.EXTRA_CHAT_ROOM_ID, room.id)
             putExtra(ChatActivity.EXTRA_CHAT_ROOM_TITLE, room.title)
@@ -76,7 +109,18 @@ class MainActivity : AppCompatActivity() {
         startActivity(intent)
     }
 
-    companion object {
-        private const val TAG = "MainActivity"
+    private fun logout() {
+        auth.signOut()
+        Toast.makeText(this, "Signed out", Toast.LENGTH_SHORT).show()
+        goToLogin()
+    }
+
+    private fun goToLogin() {
+        startActivity(Intent(this, LoginActivity::class.java))
+        finish()
+    }
+
+    private companion object {
+        const val MENU_LOGOUT = 1001
     }
 }
