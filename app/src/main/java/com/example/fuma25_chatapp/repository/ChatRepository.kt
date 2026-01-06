@@ -9,10 +9,6 @@ class ChatRepository {
 
     private val db = FirebaseFirestore.getInstance()
 
-    /**
-     * Listens for all chat rooms where the given user is a member.
-     * Uses a real-time Firestore snapshot listener.
-     */
     fun listenToChatRooms(
         userId: String,
         onUpdate: (List<ChatRoom>) -> Unit
@@ -23,7 +19,6 @@ class ChatRepository {
                 if (error != null || snapshot == null) return@addSnapshotListener
 
                 val rooms = snapshot.documents.map { doc ->
-                    // Safely read "members" as a list of Strings without unchecked casts
                     val membersAny = doc.get("members") as? List<*>
                     val members = membersAny?.filterIsInstance<String>() ?: emptyList()
 
@@ -38,11 +33,6 @@ class ChatRepository {
             }
     }
 
-
-    /**
-     * Listens for all messages in a specific chat room,
-     * ordered by timestamp (oldest -> newest).
-     */
     fun listenToMessages(
         chatRoomId: String,
         onUpdate: (List<Message>) -> Unit
@@ -68,14 +58,23 @@ class ChatRepository {
 
     /**
      * Sends a new message to the given chat room.
+     * Pro: provides success + error callbacks.
      */
     fun sendMessage(
         chatRoomId: String,
         senderId: String,
-        text: String
+        text: String,
+        onSuccess: () -> Unit,
+        onError: (Exception) -> Unit
     ) {
+        val trimmed = text.trim()
+        if (trimmed.isBlank()) {
+            onError(IllegalArgumentException("Message is blank"))
+            return
+        }
+
         val message = mapOf(
-            "text" to text,
+            "text" to trimmed,
             "senderId" to senderId,
             "timestamp" to System.currentTimeMillis()
         )
@@ -84,5 +83,7 @@ class ChatRepository {
             .document(chatRoomId)
             .collection("messages")
             .add(message)
+            .addOnSuccessListener { onSuccess() }
+            .addOnFailureListener { e -> onError(e) }
     }
 }
