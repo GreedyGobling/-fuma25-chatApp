@@ -68,7 +68,9 @@ class ChatActivity : AppCompatActivity() {
             adapter.submitList(messages)
 
             if (messages.isNotEmpty()) {
-                recyclerView.scrollToPosition(messages.size - 1)
+                recyclerView.post {
+                    recyclerView.scrollToPosition(messages.size - 1)
+                }
             }
         }
     }

@@ -1,10 +1,8 @@
 package com.example.fuma25_chatapp
 
-import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
-import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -70,27 +68,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun openChatRoom(room: ChatRoom) {
-        // We use setClassName so this compiles even if ChatActivity is not created yet
-        val intent = Intent().apply {
-            setClassName(packageName, "$packageName.ChatActivity")
-            putExtra(EXTRA_CHAT_ROOM_ID, room.id)
-            putExtra(EXTRA_CHAT_ROOM_TITLE, room.title)
+        // Open ChatActivity and pass the selected chat room data
+        val intent = Intent(this, ChatActivity::class.java).apply {
+            putExtra(ChatActivity.EXTRA_CHAT_ROOM_ID, room.id)
+            putExtra(ChatActivity.EXTRA_CHAT_ROOM_TITLE, room.title)
         }
-
-        try {
-            startActivity(intent)
-        } catch (_: ActivityNotFoundException) {
-            Toast.makeText(
-                this,
-                "ChatActivity not found yet. Create ChatActivity to open chats.",
-                Toast.LENGTH_LONG
-            ).show()
-        }
+        startActivity(intent)
     }
 
     companion object {
         private const val TAG = "MainActivity"
-        const val EXTRA_CHAT_ROOM_ID = "extra_chat_room_id"
-        const val EXTRA_CHAT_ROOM_TITLE = "extra_chat_room_title"
     }
 }
