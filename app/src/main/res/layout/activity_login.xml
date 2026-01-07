@@ -94,7 +94,8 @@
         android:backgroundTint="#612"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBaseline_toBottomOf="@id/orDivider"
+        app:layout_constraintBaseline_toBottomOf="@id/orDivider"/>
+
     <ProgressBar
         android:id="@+id/loginProgress"
         android:layout_width="wrap_content"
