@@ -115,6 +115,10 @@ class ChatActivity : AppCompatActivity() {
             }
         )
     }
+    //add friend inside a chat
+    private fun showInviteFriendDialog() {
+        val myUid = auth.currentUser?.uid ?: return
+    }
 
     private fun toast(msg: String) {
         Toast.makeText(this, msg, Toast.LENGTH_LONG).show()

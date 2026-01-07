@@ -216,4 +216,33 @@ class ChatRepository {
                 e.message ?: "Unknown Firestore error"
         }
     }
+
+    // 1. Find a friend
+    fun addFriendByEmail(currentUserId: String, friendEmail: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
+        db.collection("users")
+            .whereEqualTo("email", friendEmail)
+            .get()
+            .addOnSuccessListener { snapshot ->
+                if (snapshot.isEmpty) {
+                    onError("Ingen användare hittades med den e-posten")
+                    return@addOnSuccessListener
+                }
+                val friendUid = snapshot.documents.first().id
+
+                // Update friendlist
+                db.collection("users").document(currentUserId)
+                    .update("friends", FieldValue.arrayUnion(friendUid))
+                    .addOnSuccessListener { onSuccess() }
+                    .addOnFailureListener { e -> onError(e.message ?: "Kunde inte spara vän") }
+            }
+            .addOnFailureListener { e -> onError(e.message ?: "Sökning misslyckades") }
+    }
+
+    // 2. invite friend to specifik chatroom
+    fun inviteFriendToRoom(chatRoomId: String, friendUid: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
+        db.collection("chat-rooms").document(chatRoomId)
+            .update("members", FieldValue.arrayUnion(friendUid))
+            .addOnSuccessListener { onSuccess() }
+            .addOnFailureListener { e -> onError(e.message ?: "Kunde inte bjuda in vän") }
+    }
 }
