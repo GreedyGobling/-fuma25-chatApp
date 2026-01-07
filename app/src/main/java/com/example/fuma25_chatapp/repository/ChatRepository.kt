@@ -15,8 +15,6 @@ class ChatRepository {
 
     /**
      * Listen to chat rooms where the user is a member.
-     * Rooms are sorted locally by createdAt (newest first),
-     * so no Firestore index is required.
      */
     fun listenToChatRooms(
         userId: String,
@@ -50,7 +48,6 @@ class ChatRepository {
                             lastMessageAt = doc.getTimestamp("lastMessageAt")
                         )
                     }
-                    // Sort locally: newest first
                     .sortedByDescending { it.createdAt ?: Timestamp(0, 0) }
 
                 onUpdate(rooms)
@@ -59,7 +56,6 @@ class ChatRepository {
 
     /**
      * Listen to messages inside a chat room.
-     * Messages are ordered oldest -> newest.
      */
     fun listenToMessages(
         chatRoomId: String,
@@ -105,7 +101,7 @@ class ChatRepository {
     ) {
         val trimmed = text.trim()
         if (trimmed.isBlank()) {
-            onError("Message is empty")
+            onError("Meddelandet är tomt")
             return
         }
 
@@ -121,10 +117,8 @@ class ChatRepository {
             .add(message)
             .addOnSuccessListener {
                 roomRef.update(
-                    mapOf(
-                        "lastMessage" to trimmed,
-                        "lastMessageAt" to FieldValue.serverTimestamp()
-                    )
+                    "lastMessage", trimmed,
+                    "lastMessageAt", FieldValue.serverTimestamp()
                 )
                 onSuccess()
             }
@@ -135,7 +129,6 @@ class ChatRepository {
 
     /**
      * Create a new chat room.
-     * The creator is automatically added as a member.
      */
     fun createChatRoom(
         title: String,
@@ -145,7 +138,7 @@ class ChatRepository {
     ) {
         val trimmed = title.trim()
         if (trimmed.isBlank()) {
-            onError("Title is empty")
+            onError("Titel saknas")
             return
         }
 
@@ -160,21 +153,12 @@ class ChatRepository {
 
         db.collection("chat-rooms")
             .add(data)
-            .addOnSuccessListener { docRef ->
-                onSuccess(docRef.id)
-            }
-            .addOnFailureListener { e ->
-                onError(mapFirestoreError(e))
-            }
+            .addOnSuccessListener { onSuccess(it.id) }
+            .addOnFailureListener { e -> onError(mapFirestoreError(e)) }
     }
 
     /**
-     * Delete a chat room:
-     * 1) delete all messages in /chat-rooms/{roomId}/messages
-     * 2) delete the room document
-     *
-     * NOTE: Client-side deletion is OK for small rooms.
-     * Firestore batch limit is 500 operations.
+     * Delete a chat room and all messages.
      */
     fun deleteChatRoom(
         chatRoomId: String,
@@ -187,64 +171,80 @@ class ChatRepository {
         messagesRef.get()
             .addOnSuccessListener { snapshot ->
                 val batch = db.batch()
-
-                // Delete all message documents
-                snapshot.documents.forEach { doc ->
-                    batch.delete(doc.reference)
-                }
-
-                // Delete the room itself
+                snapshot.documents.forEach { batch.delete(it.reference) }
                 batch.delete(roomRef)
 
                 batch.commit()
                     .addOnSuccessListener { onSuccess() }
                     .addOnFailureListener { e -> onError(mapFirestoreError(e)) }
             }
+            .addOnFailureListener { e -> onError(mapFirestoreError(e)) }
+    }
+
+    /**
+     * Find a friend by email (uses user-public collection).
+     */
+    fun addFriendByEmail(
+        currentUserId: String,
+        friendEmail: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        val emailLower = friendEmail.trim().lowercase()
+        if (emailLower.isBlank()) {
+            onError("Skriv en e-postadress")
+            return
+        }
+
+        db.collection("user-public")
+            .whereEqualTo("emailLower", emailLower)
+            .limit(1)
+            .get()
+            .addOnSuccessListener { snapshot ->
+                if (snapshot.isEmpty) {
+                    onError("Ingen användare hittades")
+                    return@addOnSuccessListener
+                }
+
+                val friendUid = snapshot.documents.first().id
+
+                db.collection("users").document(currentUserId)
+                    .update("friends", FieldValue.arrayUnion(friendUid))
+                    .addOnSuccessListener { onSuccess() }
+                    .addOnFailureListener { e ->
+                        onError(e.message ?: "Kunde inte spara vän")
+                    }
+            }
             .addOnFailureListener { e ->
-                onError(mapFirestoreError(e))
+                onError(e.message ?: "Sökning misslyckades")
+            }
+    }
+
+    /**
+     * Invite a friend to a chat room.
+     */
+    fun inviteFriendToRoom(
+        chatRoomId: String,
+        friendUid: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        db.collection("chat-rooms").document(chatRoomId)
+            .update("members", FieldValue.arrayUnion(friendUid))
+            .addOnSuccessListener { onSuccess() }
+            .addOnFailureListener { e ->
+                onError(e.message ?: "Kunde inte bjuda in vän")
             }
     }
 
     private fun mapFirestoreError(e: Exception): String {
-        val code = (e as? FirebaseFirestoreException)?.code
-        return when (code) {
+        return when ((e as? FirebaseFirestoreException)?.code) {
             FirebaseFirestoreException.Code.PERMISSION_DENIED ->
-                "PERMISSION_DENIED (blocked by Firestore rules)."
+                "Åtkomst nekad (Firestore-regler)"
             FirebaseFirestoreException.Code.UNAVAILABLE ->
-                "UNAVAILABLE (network/server issue)."
+                "Nätverksfel"
             else ->
-                e.message ?: "Unknown Firestore error"
+                e.message ?: "Okänt fel"
         }
     }
-
-    // 1. Find a friend
-    fun addFriendByEmail(currentUserId: String, friendEmail: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
-        db.collection("users")
-            .whereEqualTo("email", friendEmail)
-            .get()
-            .addOnSuccessListener { snapshot ->
-                if (snapshot.isEmpty) {
-                    onError("Ingen användare hittades med den e-posten")
-                    return@addOnSuccessListener
-                }
-                val friendUid = snapshot.documents.first().id
-
-                // Update friendlist
-                db.collection("users").document(currentUserId)
-                    .update("friends", FieldValue.arrayUnion(friendUid))
-                    .addOnSuccessListener { onSuccess() }
-                    .addOnFailureListener { e -> onError(e.message ?: "Kunde inte spara vän") }
-            }
-            .addOnFailureListener { e -> onError(e.message ?: "Sökning misslyckades") }
-    }
-
-    // 2. invite friend to specifik chatroom
-    fun inviteFriendToRoom(chatRoomId: String, friendUid: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
-        db.collection("chat-rooms").document(chatRoomId)
-            .update("members", FieldValue.arrayUnion(friendUid))
-            .addOnSuccessListener { onSuccess() }
-            .addOnFailureListener { e -> onError(e.message ?: "Kunde inte bjuda in vän") }
-    }
-
-
 }

@@ -12,10 +12,13 @@ import androidx.appcompat.app.AppCompatActivity
 import com.example.fuma25_chatapp.R
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 
 class LoginActivity : AppCompatActivity() {
 
     private val auth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
+    private val db: FirebaseFirestore by lazy { FirebaseFirestore.getInstance() }
 
     private lateinit var emailInput: EditText
     private lateinit var passwordInput: EditText
@@ -26,8 +29,16 @@ class LoginActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Om redan inloggad -> hoppa direkt till MainActivity
-        if (auth.currentUser != null) {
+        // If already signed in -> ensure Firestore docs exist, then go straight to MainActivity
+        val existingUser = auth.currentUser
+        if (existingUser != null) {
+            val uid = existingUser.uid
+            val email = existingUser.email.orEmpty()
+
+            if (uid.isNotBlank() && email.isNotBlank()) {
+                ensureUserDocs(uid, email)
+            }
+
             goToMain()
             return
         }
@@ -49,14 +60,22 @@ class LoginActivity : AppCompatActivity() {
         setLoading(true)
 
         auth.signInWithEmailAndPassword(email, password)
-            .addOnSuccessListener {
+            .addOnSuccessListener { result ->
+                val uid = result.user?.uid.orEmpty()
+                val userEmail = result.user?.email.orEmpty()
+
+                // Ensure Firestore documents exist for friend search/invites
+                if (uid.isNotBlank() && userEmail.isNotBlank()) {
+                    ensureUserDocs(uid, userEmail)
+                }
+
                 setLoading(false)
                 toast("Inloggad ✅")
                 goToMain()
             }
             .addOnFailureListener { e ->
                 setLoading(false)
-                toast("Login misslyckades: ${e.message}")
+                toast("Inloggning misslyckades: ${e.message}")
             }
     }
 
@@ -65,7 +84,15 @@ class LoginActivity : AppCompatActivity() {
         setLoading(true)
 
         auth.createUserWithEmailAndPassword(email, password)
-            .addOnSuccessListener {
+            .addOnSuccessListener { result ->
+                val uid = result.user?.uid.orEmpty()
+                val userEmail = result.user?.email.orEmpty()
+
+                // Ensure Firestore documents exist for friend search/invites
+                if (uid.isNotBlank() && userEmail.isNotBlank()) {
+                    ensureUserDocs(uid, userEmail)
+                }
+
                 setLoading(false)
                 toast("Konto skapat ✅")
                 goToMain()
@@ -80,6 +107,52 @@ class LoginActivity : AppCompatActivity() {
                 }
 
                 toast(msg)
+            }
+    }
+
+    /**
+     * Ensures Firestore documents exist:
+     * - users/{uid} (private)
+     * - user-public/{uid} (public searchable)
+     *
+     * Uses merge to avoid overwriting existing data.
+     */
+    private fun ensureUserDocs(uid: String, email: String) {
+        val emailLower = email.trim().lowercase()
+        if (emailLower.isBlank()) return
+
+        // Create/merge private user doc
+        db.collection("users").document(uid)
+            .set(
+                mapOf(
+                    // Keep friends list if it already exists
+                    "friends" to emptyList<String>()
+                ),
+                SetOptions.merge()
+            )
+            .addOnFailureListener { e ->
+                Toast.makeText(
+                    this,
+                    "Kunde inte skapa users-doc: ${e.message}",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+
+        // Create/merge public searchable profile
+        db.collection("user-public").document(uid)
+            .set(
+                mapOf(
+                    "emailLower" to emailLower,
+                    "name" to email.substringBefore("@")
+                ),
+                SetOptions.merge()
+            )
+            .addOnFailureListener { e ->
+                Toast.makeText(
+                    this,
+                    "Kunde inte skapa user-public: ${e.message}",
+                    Toast.LENGTH_LONG
+                ).show()
             }
     }
 

@@ -11,4 +11,9 @@
     <string name="long_press_to_delete">Håll inne för att radera</string>
     <string name="untitled_chat">Namnlöst chattrum</string>
 
+    <!-- Chat screen -->
+    <string name="hint_skriv_meddelande">Skriv ett meddelande</string>
+    <string name="skicka">Skicka</string>
+    <string name="bjud_in_van">Bjud in vän</string>
+
 </resources>

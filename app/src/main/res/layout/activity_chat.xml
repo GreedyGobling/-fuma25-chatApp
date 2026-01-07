@@ -32,7 +32,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:minHeight="48dp"
-            android:hint="Write a message"
+            android:hint="@string/hint_skriv_meddelande"
             android:padding="12dp"/>
 
         <ImageButton
@@ -40,18 +40,18 @@
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:src="@android:drawable/ic_menu_send"
-            android:contentDescription="Send"
+            android:contentDescription="@string/skicka"
             android:background="?attr/selectableItemBackgroundBorderless"/>
+
         <ImageButton
             android:id="@+id/btnInviteFriend"
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:src="@android:drawable/ic_menu_add"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Bjud in vän"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
+            android:contentDescription="@string/bjud_in_van"
             android:layout_margin="8dp" />
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
+
