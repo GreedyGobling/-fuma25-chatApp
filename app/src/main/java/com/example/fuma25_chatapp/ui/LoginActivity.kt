@@ -11,6 +11,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.fuma25_chatapp.R
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthUserCollisionException
 
 class LoginActivity : AppCompatActivity() {
 
@@ -50,12 +51,12 @@ class LoginActivity : AppCompatActivity() {
         auth.signInWithEmailAndPassword(email, password)
             .addOnSuccessListener {
                 setLoading(false)
-                Toast.makeText(this, "Inloggad", Toast.LENGTH_SHORT).show()
+                toast("Inloggad ✅")
                 goToMain()
             }
-            .addOnFailureListener {
+            .addOnFailureListener { e ->
                 setLoading(false)
-                Toast.makeText(this, "Login misslyckades: ${it.message}", Toast.LENGTH_LONG).show()
+                toast("Login misslyckades: ${e.message}")
             }
     }
 
@@ -66,12 +67,19 @@ class LoginActivity : AppCompatActivity() {
         auth.createUserWithEmailAndPassword(email, password)
             .addOnSuccessListener {
                 setLoading(false)
-                Toast.makeText(this, "Konto skapat!", Toast.LENGTH_SHORT).show()
+                toast("Konto skapat ✅")
                 goToMain()
             }
-            .addOnFailureListener {
+            .addOnFailureListener { e ->
                 setLoading(false)
-                Toast.makeText(this, "Registrering misslyckades: ${it.message}", Toast.LENGTH_LONG).show()
+
+                val msg = when (e) {
+                    is FirebaseAuthUserCollisionException ->
+                        "Det finns redan ett konto med den e-posten. Tryck på Logga in istället."
+                    else -> e.message ?: "Registrering misslyckades."
+                }
+
+                toast(msg)
             }
     }
 
@@ -80,15 +88,13 @@ class LoginActivity : AppCompatActivity() {
         val password = passwordInput.text?.toString().orEmpty()
 
         if (email.isBlank() || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            Toast.makeText(this, "Skriv en giltig e-post", Toast.LENGTH_SHORT).show()
+            toast("Skriv en giltig e-post")
             return null
         }
-
         if (password.length < 6) {
-            Toast.makeText(this, "Lösenord måste vara minst 6 tecken", Toast.LENGTH_SHORT).show()
+            toast("Lösenord måste vara minst 6 tecken")
             return null
         }
-
         return email to password
     }
 
@@ -101,8 +107,11 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun goToMain() {
-        val intent = Intent(this, MainActivity::class.java)
-        startActivity(intent)
+        startActivity(Intent(this, MainActivity::class.java))
         finish()
+    }
+
+    private fun toast(msg: String) {
+        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
     }
 }
