@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.text.InputType
 import android.view.Menu
 import android.view.MenuItem
+import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -32,6 +33,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var adapter: ChatRoomsAdapter
     private lateinit var fabCreateRoom: FloatingActionButton
 
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -45,6 +47,10 @@ class MainActivity : AppCompatActivity() {
         toolbar = findViewById(R.id.toolbar)
         recyclerView = findViewById(R.id.recyclerView)
         fabCreateRoom = findViewById(R.id.fabCreateRoom)
+        val btnAddFriend = findViewById<Button>(R.id.btnAddFriend)
+        btnAddFriend.setOnClickListener {
+            showAddFriendDialog()
+        }
 
         setSupportActionBar(toolbar)
 
@@ -225,6 +231,26 @@ class MainActivity : AppCompatActivity() {
                 toast("Kunde inte skapa rum: $msg")
             }
         )
+    }
+// function for showing dialog
+    private fun showAddFriendDialog() {
+        val input = EditText(this)
+        input.hint = "Vännens e-post"
+
+        AlertDialog.Builder(this)
+            .setTitle("Lägg till vän")
+            .setView(input)
+            .setPositiveButton("Lägg till") { _, _ ->
+                val email = input.text.toString().trim()
+                val myUid = auth.currentUser?.uid ?: return@setPositiveButton
+
+                repository.addFriendByEmail(myUid, email,
+                    onSuccess = { toast("Vän tillagd!") },
+                    onError = { msg -> toast(msg) }
+                )
+            }
+            .setNegativeButton("Avbryt", null)
+            .show()
     }
 
     private companion object {
