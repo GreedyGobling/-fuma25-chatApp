@@ -245,4 +245,6 @@ class ChatRepository {
             .addOnSuccessListener { onSuccess() }
             .addOnFailureListener { e -> onError(e.message ?: "Kunde inte bjuda in vän") }
     }
+
+
 }
