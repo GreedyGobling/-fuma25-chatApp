@@ -4,56 +4,89 @@ import com.example.fuma25_chatapp.data.ChatRoom
 import com.example.fuma25_chatapp.data.Message
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
+import com.google.firebase.Timestamp
 
 class ChatRepository {
 
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
 
+    /**
+     * Listen to chat rooms where the user is a member.
+     * Rooms are sorted locally by createdAt (newest first),
+     * so no Firestore index is required.
+     */
     fun listenToChatRooms(
         userId: String,
         onUpdate: (List<ChatRoom>) -> Unit,
         onError: (String) -> Unit
     ): ListenerRegistration {
+
         return db.collection("chat-rooms")
             .whereArrayContains("members", userId)
             .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    onError(error.message ?: "Firestore error")
+
+                if (error != null && snapshot == null) {
+                    val msg = when (error.code) {
+                        FirebaseFirestoreException.Code.PERMISSION_DENIED ->
+                            "PERMISSION_DENIED (blocked by Firestore rules)."
+                        else ->
+                            error.message ?: "Unknown Firestore error"
+                    }
+                    onError(msg)
                     return@addSnapshotListener
                 }
+
                 if (snapshot == null) return@addSnapshotListener
 
-                val rooms = snapshot.documents.map { doc ->
-                    val membersAny = doc.get("members") as? List<*>
-                    val members = membersAny?.filterIsInstance<String>() ?: emptyList()
+                val rooms = snapshot.documents
+                    .map { doc ->
+                        val members =
+                            (doc.get("members") as? List<*>)?.filterIsInstance<String>().orEmpty()
 
-                    ChatRoom(
-                        id = doc.id,
-                        members = members,
-                        title = doc.getString("title") ?: ""
-                    )
-                }
+                        ChatRoom(
+                            id = doc.id,
+                            title = doc.getString("title") ?: "",
+                            members = members,
+                            createdAt = doc.getTimestamp("createdAt")
+                        )
+                    }
+                    // Sort locally: newest first
+                    .sortedByDescending { it.createdAt ?: Timestamp(0, 0) }
 
                 onUpdate(rooms)
             }
     }
 
+    /**
+     * Listen to messages inside a chat room.
+     * Messages are ordered oldest -> newest.
+     */
     fun listenToMessages(
         chatRoomId: String,
         onUpdate: (List<Message>) -> Unit,
         onError: (String) -> Unit
     ): ListenerRegistration {
+
         return db.collection("chat-rooms")
             .document(chatRoomId)
             .collection("messages")
             .orderBy("createdAt", Query.Direction.ASCENDING)
             .addSnapshotListener { snapshot, error ->
+
                 if (error != null) {
-                    onError(error.message ?: "Firestore error")
+                    val msg = when (error.code) {
+                        FirebaseFirestoreException.Code.PERMISSION_DENIED ->
+                            "PERMISSION_DENIED (blocked by Firestore rules)."
+                        else ->
+                            error.message ?: "Firestore error"
+                    }
+                    onError(msg)
                     return@addSnapshotListener
                 }
+
                 if (snapshot == null) return@addSnapshotListener
 
                 val messages = snapshot.documents.map { doc ->
@@ -69,6 +102,9 @@ class ChatRepository {
             }
     }
 
+    /**
+     * Send a message to a chat room.
+     */
     fun sendMessage(
         chatRoomId: String,
         senderId: String,
@@ -93,7 +129,6 @@ class ChatRepository {
         roomRef.collection("messages")
             .add(message)
             .addOnSuccessListener {
-                // Optional: update last message metadata
                 roomRef.update(
                     mapOf(
                         "lastMessage" to trimmed,
@@ -103,11 +138,20 @@ class ChatRepository {
                 onSuccess()
             }
             .addOnFailureListener { e ->
-                onError(e.message ?: "Could not send message")
+                val msg = when ((e as? FirebaseFirestoreException)?.code) {
+                    FirebaseFirestoreException.Code.PERMISSION_DENIED ->
+                        "PERMISSION_DENIED (blocked by Firestore rules)."
+                    else ->
+                        e.message ?: "Could not send message"
+                }
+                onError(msg)
             }
     }
 
-    // Creates a new chat room in Firestore
+    /**
+     * Create a new chat room.
+     * The creator is automatically added as a member.
+     */
     fun createChatRoom(
         title: String,
         creatorUserId: String,
@@ -135,7 +179,13 @@ class ChatRepository {
                 onSuccess(docRef.id)
             }
             .addOnFailureListener { e ->
-                onError(e.message ?: "Could not create chat room")
+                val msg = when ((e as? FirebaseFirestoreException)?.code) {
+                    FirebaseFirestoreException.Code.PERMISSION_DENIED ->
+                        "PERMISSION_DENIED (blocked by Firestore rules)."
+                    else ->
+                        e.message ?: "Could not create chat room"
+                }
+                onError(msg)
             }
     }
 }

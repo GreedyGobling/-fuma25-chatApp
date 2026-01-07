@@ -1,7 +1,10 @@
 package com.example.fuma25_chatapp.data
 
+import com.google.firebase.Timestamp
+
 data class ChatRoom(
     val id: String = "",
+    val title: String = "",
     val members: List<String> = emptyList(),
-    val title: String = ""
+    val createdAt: Timestamp? = null
 )

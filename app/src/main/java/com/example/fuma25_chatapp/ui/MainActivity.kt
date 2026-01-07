@@ -2,6 +2,7 @@ package com.example.fuma25_chatapp.ui
 
 import android.content.Intent
 import android.os.Bundle
+import android.text.InputType
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.EditText
@@ -24,6 +25,7 @@ class MainActivity : AppCompatActivity() {
     private val repository: ChatRepository by lazy { ChatRepository() }
 
     private var roomsListener: ListenerRegistration? = null
+    private var lastRoomsCount: Int = 0
 
     private lateinit var toolbar: MaterialToolbar
     private lateinit var recyclerView: RecyclerView
@@ -33,7 +35,6 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // If user is not logged in, go directly to login screen
         if (auth.currentUser == null) {
             goToLoginClearBackstack()
             return
@@ -54,7 +55,6 @@ class MainActivity : AppCompatActivity() {
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = adapter
 
-        // FAB creates a new chat room
         fabCreateRoom.setOnClickListener {
             showCreateRoomDialog()
         }
@@ -69,7 +69,6 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        // Start listening for chat rooms where user is a member
         startListeningToRooms(userId)
     }
 
@@ -96,14 +95,17 @@ class MainActivity : AppCompatActivity() {
 
     private fun startListeningToRooms(userId: String) {
         roomsListener?.remove()
-
         roomsListener = repository.listenToChatRooms(
             userId = userId,
             onUpdate = { rooms ->
+                lastRoomsCount = rooms.size
                 adapter.submitList(rooms)
             },
             onError = { msg ->
-                toast("Error loading rooms: $msg")
+                // Visa bara error om vi faktiskt inte har något att visa
+                if (lastRoomsCount == 0) {
+                    toast("Error loading rooms: $msg")
+                }
             }
         )
     }
@@ -134,12 +136,12 @@ class MainActivity : AppCompatActivity() {
         Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
     }
 
-    // Shows dialog where user enters chat room title
     private fun showCreateRoomDialog() {
         val userId = auth.currentUser?.uid ?: return
 
         val input = EditText(this).apply {
             hint = "Ex: Klasschatten"
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
         }
 
         AlertDialog.Builder(this)
@@ -148,19 +150,36 @@ class MainActivity : AppCompatActivity() {
             .setView(input)
             .setNegativeButton("Avbryt", null)
             .setPositiveButton("Skapa") { _, _ ->
-                val title = input.text.toString().trim()
-                createRoom(userId, title)
+                val title = input.text?.toString()?.trim().orEmpty()
+                val validatedTitle = validateRoomTitleOrNull(title)
+                if (validatedTitle == null) {
+                    toast("Skriv ett namn (minst 2 tecken).")
+                    return@setPositiveButton
+                }
+                createRoom(userId, validatedTitle)
             }
             .show()
     }
 
-    // Creates chat room in Firestore and opens it
+    private fun validateRoomTitleOrNull(title: String): String? {
+        val t = title.trim()
+        if (t.length < 2) return null
+        if (t.length > 40) return t.take(40)
+        return t
+    }
+
     private fun createRoom(userId: String, title: String) {
+        // Hindra dubbelklick/dubbelskapande
+        fabCreateRoom.isEnabled = false
+
         repository.createChatRoom(
             title = title,
             creatorUserId = userId,
             onSuccess = { roomId ->
+                fabCreateRoom.isEnabled = true
                 toast("Chattrum skapat")
+
+                // Öppna rummet som skapats
                 openChatRoom(
                     ChatRoom(
                         id = roomId,
@@ -170,6 +189,7 @@ class MainActivity : AppCompatActivity() {
                 )
             },
             onError = { msg ->
+                fabCreateRoom.isEnabled = true
                 toast("Kunde inte skapa rum: $msg")
             }
         )
