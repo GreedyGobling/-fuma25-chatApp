@@ -48,9 +48,13 @@ class MainActivity : AppCompatActivity() {
 
         setSupportActionBar(toolbar)
 
-        adapter = ChatRoomsAdapter { room ->
-            openChatRoom(room)
-        }
+        val userId = auth.currentUser?.uid.orEmpty()
+
+        adapter = ChatRoomsAdapter(
+            currentUserId = userId,
+            onClick = { room -> openChatRoom(room) },
+            onDeleteRequested = { room -> showDeleteRoomDialog(room) }
+        )
 
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = adapter
@@ -102,7 +106,7 @@ class MainActivity : AppCompatActivity() {
                 adapter.submitList(rooms)
             },
             onError = { msg ->
-                // Visa bara error om vi faktiskt inte har något att visa
+                // Only show the error if we have nothing to display
                 if (lastRoomsCount == 0) {
                     toast("Error loading rooms: $msg")
                 }
@@ -116,6 +120,33 @@ class MainActivity : AppCompatActivity() {
             putExtra(ChatActivity.EXTRA_CHAT_ROOM_TITLE, room.title)
         }
         startActivity(intent)
+    }
+
+    private fun showDeleteRoomDialog(room: ChatRoom) {
+        AlertDialog.Builder(this)
+            .setTitle("Radera chattrum")
+            .setMessage("Vill du radera \"${room.title}\"?\nAlla meddelanden i rummet raderas också.")
+            .setNegativeButton("Avbryt", null)
+            .setPositiveButton("Radera") { _, _ ->
+                deleteRoom(room)
+            }
+            .show()
+    }
+
+    private fun deleteRoom(room: ChatRoom) {
+        fabCreateRoom.isEnabled = false
+
+        repository.deleteChatRoom(
+            chatRoomId = room.id,
+            onSuccess = {
+                fabCreateRoom.isEnabled = true
+                toast("Chattrum raderat")
+            },
+            onError = { msg ->
+                fabCreateRoom.isEnabled = true
+                toast("Kunde inte radera: $msg")
+            }
+        )
     }
 
     private fun logout() {
@@ -169,7 +200,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun createRoom(userId: String, title: String) {
-        // Hindra dubbelklick/dubbelskapande
+        // Prevent double taps
         fabCreateRoom.isEnabled = false
 
         repository.createChatRoom(
@@ -179,11 +210,12 @@ class MainActivity : AppCompatActivity() {
                 fabCreateRoom.isEnabled = true
                 toast("Chattrum skapat")
 
-                // Öppna rummet som skapats
+                // Open the room that was created
                 openChatRoom(
                     ChatRoom(
                         id = roomId,
                         title = title,
+                        createdBy = userId,
                         members = listOf(userId)
                     )
                 )

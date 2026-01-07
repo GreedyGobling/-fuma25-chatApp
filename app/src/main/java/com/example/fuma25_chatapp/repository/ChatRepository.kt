@@ -2,12 +2,12 @@ package com.example.fuma25_chatapp.repository
 
 import com.example.fuma25_chatapp.data.ChatRoom
 import com.example.fuma25_chatapp.data.Message
+import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
-import com.google.firebase.Timestamp
 
 class ChatRepository {
 
@@ -29,13 +29,7 @@ class ChatRepository {
             .addSnapshotListener { snapshot, error ->
 
                 if (error != null && snapshot == null) {
-                    val msg = when (error.code) {
-                        FirebaseFirestoreException.Code.PERMISSION_DENIED ->
-                            "PERMISSION_DENIED (blocked by Firestore rules)."
-                        else ->
-                            error.message ?: "Unknown Firestore error"
-                    }
-                    onError(msg)
+                    onError(mapFirestoreError(error))
                     return@addSnapshotListener
                 }
 
@@ -49,8 +43,11 @@ class ChatRepository {
                         ChatRoom(
                             id = doc.id,
                             title = doc.getString("title") ?: "",
+                            createdBy = doc.getString("createdBy") ?: "",
                             members = members,
-                            createdAt = doc.getTimestamp("createdAt")
+                            createdAt = doc.getTimestamp("createdAt"),
+                            lastMessage = doc.getString("lastMessage") ?: "",
+                            lastMessageAt = doc.getTimestamp("lastMessageAt")
                         )
                     }
                     // Sort locally: newest first
@@ -77,13 +74,7 @@ class ChatRepository {
             .addSnapshotListener { snapshot, error ->
 
                 if (error != null) {
-                    val msg = when (error.code) {
-                        FirebaseFirestoreException.Code.PERMISSION_DENIED ->
-                            "PERMISSION_DENIED (blocked by Firestore rules)."
-                        else ->
-                            error.message ?: "Firestore error"
-                    }
-                    onError(msg)
+                    onError(mapFirestoreError(error))
                     return@addSnapshotListener
                 }
 
@@ -138,13 +129,7 @@ class ChatRepository {
                 onSuccess()
             }
             .addOnFailureListener { e ->
-                val msg = when ((e as? FirebaseFirestoreException)?.code) {
-                    FirebaseFirestoreException.Code.PERMISSION_DENIED ->
-                        "PERMISSION_DENIED (blocked by Firestore rules)."
-                    else ->
-                        e.message ?: "Could not send message"
-                }
-                onError(msg)
+                onError(mapFirestoreError(e))
             }
     }
 
@@ -179,13 +164,56 @@ class ChatRepository {
                 onSuccess(docRef.id)
             }
             .addOnFailureListener { e ->
-                val msg = when ((e as? FirebaseFirestoreException)?.code) {
-                    FirebaseFirestoreException.Code.PERMISSION_DENIED ->
-                        "PERMISSION_DENIED (blocked by Firestore rules)."
-                    else ->
-                        e.message ?: "Could not create chat room"
-                }
-                onError(msg)
+                onError(mapFirestoreError(e))
             }
+    }
+
+    /**
+     * Delete a chat room:
+     * 1) delete all messages in /chat-rooms/{roomId}/messages
+     * 2) delete the room document
+     *
+     * NOTE: Client-side deletion is OK for small rooms.
+     * Firestore batch limit is 500 operations.
+     */
+    fun deleteChatRoom(
+        chatRoomId: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        val roomRef = db.collection("chat-rooms").document(chatRoomId)
+        val messagesRef = roomRef.collection("messages")
+
+        messagesRef.get()
+            .addOnSuccessListener { snapshot ->
+                val batch = db.batch()
+
+                // Delete all message documents
+                snapshot.documents.forEach { doc ->
+                    batch.delete(doc.reference)
+                }
+
+                // Delete the room itself
+                batch.delete(roomRef)
+
+                batch.commit()
+                    .addOnSuccessListener { onSuccess() }
+                    .addOnFailureListener { e -> onError(mapFirestoreError(e)) }
+            }
+            .addOnFailureListener { e ->
+                onError(mapFirestoreError(e))
+            }
+    }
+
+    private fun mapFirestoreError(e: Exception): String {
+        val code = (e as? FirebaseFirestoreException)?.code
+        return when (code) {
+            FirebaseFirestoreException.Code.PERMISSION_DENIED ->
+                "PERMISSION_DENIED (blocked by Firestore rules)."
+            FirebaseFirestoreException.Code.UNAVAILABLE ->
+                "UNAVAILABLE (network/server issue)."
+            else ->
+                e.message ?: "Unknown Firestore error"
+        }
     }
 }
