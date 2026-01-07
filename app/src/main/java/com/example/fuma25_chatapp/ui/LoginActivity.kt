@@ -10,7 +10,11 @@ import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.fuma25_chatapp.R
+import com.google.firebase.FirebaseNetworkException
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
+import com.google.firebase.auth.FirebaseAuthInvalidUserException
+import com.google.firebase.auth.FirebaseAuthUserCollisionException
 
 class LoginActivity : AppCompatActivity() {
 
@@ -24,13 +28,6 @@ class LoginActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        // Om redan inloggad -> hoppa direkt till MainActivity
-        if (auth.currentUser != null) {
-            goToMain()
-            return
-        }
-
         setContentView(R.layout.activity_login)
 
         emailInput = findViewById(R.id.emailInput)
@@ -38,6 +35,12 @@ class LoginActivity : AppCompatActivity() {
         loginButton = findViewById(R.id.loginButton)
         registerButton = findViewById(R.id.registerButton)
         progress = findViewById(R.id.loginProgress)
+
+        // Om redan inloggad -> hoppa direkt till MainActivity
+        if (auth.currentUser != null) {
+            goToMainClearBackstack()
+            return
+        }
 
         loginButton.setOnClickListener { login() }
         registerButton.setOnClickListener { register() }
@@ -50,12 +53,12 @@ class LoginActivity : AppCompatActivity() {
         auth.signInWithEmailAndPassword(email, password)
             .addOnSuccessListener {
                 setLoading(false)
-                Toast.makeText(this, "Inloggad", Toast.LENGTH_SHORT).show()
-                goToMain()
+                toast("Inloggad ✅")
+                goToMainClearBackstack()
             }
-            .addOnFailureListener {
+            .addOnFailureListener { e ->
                 setLoading(false)
-                Toast.makeText(this, "Login misslyckades: ${it.message}", Toast.LENGTH_LONG).show()
+                toast(mapLoginError(e))
             }
     }
 
@@ -66,12 +69,12 @@ class LoginActivity : AppCompatActivity() {
         auth.createUserWithEmailAndPassword(email, password)
             .addOnSuccessListener {
                 setLoading(false)
-                Toast.makeText(this, "Konto skapat!", Toast.LENGTH_SHORT).show()
-                goToMain()
+                toast("Konto skapat ✅")
+                goToMainClearBackstack()
             }
-            .addOnFailureListener {
+            .addOnFailureListener { e ->
                 setLoading(false)
-                Toast.makeText(this, "Registrering misslyckades: ${it.message}", Toast.LENGTH_LONG).show()
+                toast(mapRegisterError(e))
             }
     }
 
@@ -80,12 +83,12 @@ class LoginActivity : AppCompatActivity() {
         val password = passwordInput.text?.toString().orEmpty()
 
         if (email.isBlank() || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            Toast.makeText(this, "Skriv en giltig e-post", Toast.LENGTH_SHORT).show()
+            toast("Skriv en giltig e-postadress")
             return null
         }
 
         if (password.length < 6) {
-            Toast.makeText(this, "Lösenord måste vara minst 6 tecken", Toast.LENGTH_SHORT).show()
+            toast("Lösenord måste vara minst 6 tecken")
             return null
         }
 
@@ -100,9 +103,39 @@ class LoginActivity : AppCompatActivity() {
         passwordInput.isEnabled = !isLoading
     }
 
-    private fun goToMain() {
-        val intent = Intent(this, MainActivity::class.java)
+    private fun goToMainClearBackstack() {
+        val intent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
         startActivity(intent)
         finish()
+    }
+
+    private fun mapLoginError(e: Exception): String {
+        return when (e) {
+            is FirebaseAuthInvalidUserException ->
+                "Inget konto hittades för den e-posten. Tryck på Skapa konto."
+            is FirebaseAuthInvalidCredentialsException ->
+                "Fel e-post eller lösenord."
+            is FirebaseNetworkException ->
+                "Ingen internetanslutning. Försök igen."
+            else ->
+                "Login misslyckades: ${e.message ?: "okänt fel"}"
+        }
+    }
+
+    private fun mapRegisterError(e: Exception): String {
+        return when (e) {
+            is FirebaseAuthUserCollisionException ->
+                "Det finns redan ett konto med den e-posten. Tryck på Logga in istället."
+            is FirebaseNetworkException ->
+                "Ingen internetanslutning. Försök igen."
+            else ->
+                "Registrering misslyckades: ${e.message ?: "okänt fel"}"
+        }
+    }
+
+    private fun toast(message: String) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }
 }
