@@ -15,7 +15,7 @@ import com.google.firebase.firestore.ListenerRegistration
 class ChatActivity : AppCompatActivity() {
 
     private val auth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
-    private val chatRepository: ChatRepository by lazy { ChatRepository() }
+    private val repository: ChatRepository by lazy { ChatRepository() }
 
     private var messagesListener: ListenerRegistration? = null
 
@@ -31,19 +31,11 @@ class ChatActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_chat)
 
-        // Guard: must be signed in
-        if (auth.currentUser == null) {
-            Toast.makeText(this, "Not signed in", Toast.LENGTH_LONG).show()
-            finish()
-            return
-        }
-
-        chatRoomId = intent.getStringExtra(EXTRA_CHAT_ROOM_ID).orEmpty()
+        chatRoomId = intent.getStringExtra(EXTRA_CHAT_ROOM_ID) ?: ""
         chatRoomTitle = intent.getStringExtra(EXTRA_CHAT_ROOM_TITLE) ?: "Chat"
 
-        // Guard: must have room id
         if (chatRoomId.isBlank()) {
-            Toast.makeText(this, "Missing chatRoomId", Toast.LENGTH_LONG).show()
+            toast("Missing chatRoomId")
             finish()
             return
         }
@@ -55,10 +47,16 @@ class ChatActivity : AppCompatActivity() {
         sendButton = findViewById(R.id.buttonSend)
 
         val currentUserId = auth.currentUser?.uid.orEmpty()
+        if (currentUserId.isBlank()) {
+            toast("Not signed in")
+            finish()
+            return
+        }
+
         adapter = MessagesAdapter(currentUserId)
 
         recyclerView.layoutManager = LinearLayoutManager(this).apply {
-            stackFromEnd = true // newest messages at the bottom
+            stackFromEnd = true
         }
         recyclerView.adapter = adapter
 
@@ -68,14 +66,21 @@ class ChatActivity : AppCompatActivity() {
     override fun onStart() {
         super.onStart()
 
-        // If user got signed out while app was backgrounded
-        if (auth.currentUser == null) {
-            Toast.makeText(this, "Not signed in", Toast.LENGTH_LONG).show()
-            finish()
-            return
-        }
-
-        startMessagesListener()
+        messagesListener?.remove()
+        messagesListener = repository.listenToMessages(
+            chatRoomId = chatRoomId,
+            onUpdate = { messages ->
+                adapter.submitList(messages)
+                if (messages.isNotEmpty()) {
+                    recyclerView.post {
+                        recyclerView.scrollToPosition(messages.size - 1)
+                    }
+                }
+            },
+            onError = { msg ->
+                toast("Messages error: $msg")
+            }
+        )
     }
 
     override fun onStop() {
@@ -84,47 +89,35 @@ class ChatActivity : AppCompatActivity() {
         messagesListener = null
     }
 
-    private fun startMessagesListener() {
-        // Avoid double listeners
-        if (messagesListener != null) return
-
-        messagesListener = chatRepository.listenToMessages(chatRoomId) { messages ->
-            adapter.submitList(messages)
-
-            if (messages.isNotEmpty()) {
-                recyclerView.post {
-                    recyclerView.scrollToPosition(messages.size - 1)
-                }
-            }
-        }
-    }
-
     private fun sendMessage() {
-        val userId = auth.currentUser?.uid
-        if (userId.isNullOrBlank()) {
-            Toast.makeText(this, "Not signed in", Toast.LENGTH_SHORT).show()
-            finish()
+        val userId = auth.currentUser?.uid.orEmpty()
+        val text = messageInput.text?.toString()?.trim().orEmpty()
+
+        if (userId.isBlank()) {
+            toast("Not signed in")
             return
         }
-
-        val text = messageInput.text.toString().trim()
         if (text.isBlank()) return
 
         sendButton.isEnabled = false
 
-        chatRepository.sendMessage(
+        repository.sendMessage(
             chatRoomId = chatRoomId,
             senderId = userId,
             text = text,
             onSuccess = {
-                messageInput.text.clear()
                 sendButton.isEnabled = true
+                messageInput.text?.clear()
             },
-            onError = { e ->
+            onError = { msg ->
                 sendButton.isEnabled = true
-                Toast.makeText(this, "Could not send: ${e.message}", Toast.LENGTH_LONG).show()
+                toast("Send error: $msg")
             }
         )
+    }
+
+    private fun toast(msg: String) {
+        Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
     }
 
     companion object {

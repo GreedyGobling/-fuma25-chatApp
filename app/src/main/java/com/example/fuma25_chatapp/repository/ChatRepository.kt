@@ -5,19 +5,25 @@ import com.example.fuma25_chatapp.data.Message
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.firestore.Query
 
 class ChatRepository {
 
-    private val db = FirebaseFirestore.getInstance()
+    private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
 
     fun listenToChatRooms(
         userId: String,
-        onUpdate: (List<ChatRoom>) -> Unit
+        onUpdate: (List<ChatRoom>) -> Unit,
+        onError: (String) -> Unit
     ): ListenerRegistration {
         return db.collection("chat-rooms")
             .whereArrayContains("members", userId)
             .addSnapshotListener { snapshot, error ->
-                if (error != null || snapshot == null) return@addSnapshotListener
+                if (error != null) {
+                    onError(error.message ?: "Firestore error")
+                    return@addSnapshotListener
+                }
+                if (snapshot == null) return@addSnapshotListener
 
                 val rooms = snapshot.documents.map { doc ->
                     val membersAny = doc.get("members") as? List<*>
@@ -36,14 +42,19 @@ class ChatRepository {
 
     fun listenToMessages(
         chatRoomId: String,
-        onUpdate: (List<Message>) -> Unit
+        onUpdate: (List<Message>) -> Unit,
+        onError: (String) -> Unit
     ): ListenerRegistration {
         return db.collection("chat-rooms")
             .document(chatRoomId)
             .collection("messages")
-            .orderBy("createdAt")
+            .orderBy("createdAt", Query.Direction.ASCENDING)
             .addSnapshotListener { snapshot, error ->
-                if (error != null || snapshot == null) return@addSnapshotListener
+                if (error != null) {
+                    onError(error.message ?: "Firestore error")
+                    return@addSnapshotListener
+                }
+                if (snapshot == null) return@addSnapshotListener
 
                 val messages = snapshot.documents.map { doc ->
                     Message(
@@ -58,20 +69,16 @@ class ChatRepository {
             }
     }
 
-    /**
-     * Sends a new message to the given chat room.
-     * Uses server time for createdAt to ensure consistent ordering across devices.
-     */
     fun sendMessage(
         chatRoomId: String,
         senderId: String,
         text: String,
         onSuccess: () -> Unit,
-        onError: (Exception) -> Unit
+        onError: (String) -> Unit
     ) {
         val trimmed = text.trim()
         if (trimmed.isBlank()) {
-            onError(IllegalArgumentException("Message is blank"))
+            onError("Message is empty")
             return
         }
 
@@ -81,11 +88,54 @@ class ChatRepository {
             "createdAt" to FieldValue.serverTimestamp()
         )
 
-        db.collection("chat-rooms")
-            .document(chatRoomId)
-            .collection("messages")
+        val roomRef = db.collection("chat-rooms").document(chatRoomId)
+
+        roomRef.collection("messages")
             .add(message)
-            .addOnSuccessListener { onSuccess() }
-            .addOnFailureListener { e -> onError(e) }
+            .addOnSuccessListener {
+                // Optional: update last message metadata
+                roomRef.update(
+                    mapOf(
+                        "lastMessage" to trimmed,
+                        "lastMessageAt" to FieldValue.serverTimestamp()
+                    )
+                )
+                onSuccess()
+            }
+            .addOnFailureListener { e ->
+                onError(e.message ?: "Could not send message")
+            }
+    }
+
+    // Creates a new chat room in Firestore
+    fun createChatRoom(
+        title: String,
+        creatorUserId: String,
+        onSuccess: (String) -> Unit,
+        onError: (String) -> Unit
+    ) {
+        val trimmed = title.trim()
+        if (trimmed.isBlank()) {
+            onError("Title is empty")
+            return
+        }
+
+        val data = mapOf(
+            "title" to trimmed,
+            "members" to listOf(creatorUserId),
+            "createdBy" to creatorUserId,
+            "createdAt" to FieldValue.serverTimestamp(),
+            "lastMessage" to "",
+            "lastMessageAt" to null
+        )
+
+        db.collection("chat-rooms")
+            .add(data)
+            .addOnSuccessListener { docRef ->
+                onSuccess(docRef.id)
+            }
+            .addOnFailureListener { e ->
+                onError(e.message ?: "Could not create chat room")
+            }
     }
 }
