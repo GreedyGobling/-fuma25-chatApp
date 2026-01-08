@@ -1,22 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
+<FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:padding="@dimen/item_spacing">
+    android:paddingVertical="@dimen/item_spacing">
 
     <TextView
         android:id="@+id/textMessage"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Hej!"
+        android:background="@drawable/bubble_other"
+        android:maxWidth="@dimen/message_max_width"
         android:textSize="@dimen/text_normal"
         android:textColor="@color/c_on_surface"
-        android:background="@drawable/bubble_other"
         android:paddingHorizontal="@dimen/section_spacing"
         android:paddingVertical="@dimen/item_spacing"
-        android:maxWidth="280dp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"/>
-</androidx.constraintlayout.widget.ConstraintLayout>
+        android:lineSpacingExtra="1dp" />
+
+</FrameLayout>

@@ -7,13 +7,15 @@
     android:fillViewport="true"
     android:fitsSystemWindows="true"
     android:background="@color/c_bg"
-    android:padding="@dimen/screen_padding">
+    android:paddingTop="@dimen/screen_padding"
+    android:paddingBottom="@dimen/screen_padding">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:paddingStart="@dimen/screen_padding"
+        android:paddingEnd="@dimen/screen_padding">
 
-        <!-- Container centered in the screen -->
         <LinearLayout
             android:id="@+id/contentContainer"
             android:layout_width="0dp"

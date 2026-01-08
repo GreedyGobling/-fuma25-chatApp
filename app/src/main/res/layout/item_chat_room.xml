@@ -5,7 +5,6 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginHorizontal="@dimen/screen_padding"
     android:layout_marginVertical="@dimen/item_spacing"
     app:cardCornerRadius="@dimen/button_radius"
     app:cardElevation="6dp"
@@ -40,6 +39,7 @@
             android:textColor="@color/c_on_surface"
             android:paddingHorizontal="@dimen/section_spacing"
             android:paddingVertical="@dimen/item_spacing"
+            android:background="@drawable/bg_card"
             android:visibility="gone"
             app:layout_constraintBaseline_toBaselineOf="@id/textTitle"
             app:layout_constraintEnd_toEndOf="parent" />
@@ -53,10 +53,10 @@
             android:textColor="@color/c_on_surface_muted"
             android:maxLines="1"
             android:ellipsize="end"
+            android:layout_marginTop="@dimen/item_spacing"
             app:layout_constraintTop_toBottomOf="@id/textTitle"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            android:layout_marginTop="@dimen/item_spacing" />
+            app:layout_constraintEnd_toEndOf="parent" />
 
         <TextView
             android:id="@+id/textDeleteHint"
@@ -74,4 +74,3 @@
     </androidx.constraintlayout.widget.ConstraintLayout>
 
 </androidx.cardview.widget.CardView>
-

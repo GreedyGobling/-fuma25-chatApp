@@ -4,8 +4,10 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    style="@style/ScreenRoot"
-    android:background="@color/c_bg">
+    android:background="@color/c_bg"
+    android:fitsSystemWindows="true"
+    android:paddingTop="@dimen/screen_padding"
+    android:paddingBottom="@dimen/screen_padding">
 
     <TextView
         android:id="@+id/tvFriendsTitle"
@@ -15,6 +17,8 @@
         android:textSize="@dimen/text_title"
         android:textStyle="bold"
         android:textColor="@color/c_on_surface"
+        android:layout_marginStart="@dimen/screen_padding"
+        android:layout_marginEnd="@dimen/screen_padding"
         android:layout_marginBottom="@dimen/section_spacing"/>
 
     <androidx.recyclerview.widget.RecyclerView
@@ -23,5 +27,7 @@
         android:layout_height="0dp"
         android:layout_weight="1"
         android:clipToPadding="false"
+        android:paddingHorizontal="@dimen/screen_padding"
+        android:paddingTop="@dimen/item_spacing"
         android:paddingBottom="@dimen/screen_padding"/>
 </LinearLayout>

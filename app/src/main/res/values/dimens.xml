@@ -6,6 +6,9 @@
     <dimen name="section_spacing">12dp</dimen>
     <dimen name="item_spacing">8dp</dimen>
 
+    <!-- Message bubbles -->
+    <dimen name="message_max_width">280dp</dimen>
+
     <!-- Buttons -->
     <dimen name="button_height">48dp</dimen>
     <dimen name="button_radius">24dp</dimen>
