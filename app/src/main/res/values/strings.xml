@@ -1,5 +1,5 @@
 <resources>
-  
+
     <!-- App name -->
     <string name="app_name">FUMA25 ChatApp</string>
 
@@ -15,8 +15,5 @@
     <string name="hint_skriv_meddelande">Skriv ett meddelande</string>
     <string name="skicka">Skicka</string>
     <string name="bjud_in_van">Bjud in vän</string>
-    
-    <!-- Google login -->
-    <string name="web_client_id">938138367374-2rhre2e7ae2vnsi3v91m2mncouq3ngvo.apps.googleusercontent.com</string>
 
 </resources>
