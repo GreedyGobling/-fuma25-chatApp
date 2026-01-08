@@ -85,13 +85,25 @@ class ChatActivity : AppCompatActivity() {
     }
 
     private fun sendMessage() {
-        val userId = auth.currentUser?.uid ?: return
-        val text = messageInput.text.toString()
+        val text = messageInput.text.toString().trim()
+        if (text.isEmpty()) return
 
-        repository.sendMessage(
-            chatRoomId,
-            userId,
-            text,
+        val user = auth.currentUser ?: return
+
+        val currentUserName = when {
+            !user.displayName.isNullOrBlank() -> user.displayName
+            !user.email.isNullOrBlank() -> user.email!!.substringBefore("@")
+            else -> "Användare"
+        }
+
+        val message = com.example.fuma25_chatapp.data.Message(
+            text = text,
+            senderId = user.uid,
+            senderName = currentUserName!!,
+            createdAt = com.google.firebase.Timestamp.now()
+        )
+
+        repository.sendMessage(chatRoomId, message,
             onSuccess = { messageInput.text.clear() },
             onError = { toast(it) }
         )

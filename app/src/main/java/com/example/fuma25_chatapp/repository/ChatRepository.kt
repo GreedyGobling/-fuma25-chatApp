@@ -81,6 +81,7 @@ class ChatRepository {
                         id = doc.id,
                         text = doc.getString("text") ?: "",
                         senderId = doc.getString("senderId") ?: "",
+                        senderName = doc.getString("senderName") ?: "Användare",
                         createdAt = doc.getTimestamp("createdAt")
                     )
                 }
@@ -94,30 +95,30 @@ class ChatRepository {
      */
     fun sendMessage(
         chatRoomId: String,
-        senderId: String,
-        text: String,
+        message: com.example.fuma25_chatapp.data.Message,
         onSuccess: () -> Unit,
         onError: (String) -> Unit
     ) {
-        val trimmed = text.trim()
-        if (trimmed.isBlank()) {
+        if (message.text.isBlank()) {
             onError("Meddelandet är tomt")
             return
         }
 
-        val message = mapOf(
-            "text" to trimmed,
-            "senderId" to senderId,
+        // SKAPA DENNA MAP NOGA:
+        val messageData = mapOf(
+            "text" to message.text,
+            "senderId" to message.senderId,
+            "senderName" to message.senderName,
             "createdAt" to FieldValue.serverTimestamp()
         )
 
         val roomRef = db.collection("chat-rooms").document(chatRoomId)
 
         roomRef.collection("messages")
-            .add(message)
+            .add(messageData) //
             .addOnSuccessListener {
                 roomRef.update(
-                    "lastMessage", trimmed,
+                    "lastMessage", message.text,
                     "lastMessageAt", FieldValue.serverTimestamp()
                 )
                 onSuccess()

@@ -47,11 +47,13 @@ class MessagesAdapter(
     ) : RecyclerView.ViewHolder(itemView) {
 
         private val textMessage: TextView = itemView.findViewById(R.id.textMessage)
+        private val textSenderName: TextView? = itemView.findViewById(R.id.textSenderName)
 
         fun bind(message: Message) {
             textMessage.text = message.text
 
-            // Apply bubble background (rounded + stroke) based on sender
+            textSenderName?.text = message.senderName
+
             if (viewType == VIEW_TYPE_ME) {
                 textMessage.setBackgroundResource(R.drawable.bubble_me)
             } else {
