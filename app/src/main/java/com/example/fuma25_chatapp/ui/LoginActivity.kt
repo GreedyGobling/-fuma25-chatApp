@@ -14,6 +14,19 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
+import androidx.credentials.CredentialManager
+import androidx.credentials.CustomCredential
+import androidx.credentials.GetCredentialRequest
+import androidx.credentials.GetCredentialResponse
+import androidx.credentials.exceptions.GetCredentialCancellationException
+import androidx.credentials.exceptions.GetCredentialException
+import androidx.credentials.exceptions.NoCredentialException
+import androidx.lifecycle.lifecycleScope
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential.Companion.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
+import com.google.firebase.auth.GoogleAuthProvider
+import kotlinx.coroutines.launch
 
 class LoginActivity : AppCompatActivity() {
 
@@ -24,7 +37,9 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var passwordInput: EditText
     private lateinit var loginButton: Button
     private lateinit var registerButton: Button
+    private lateinit var googleButton: Button
     private lateinit var progress: ProgressBar
+    private lateinit var credentialManager: CredentialManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -49,10 +64,14 @@ class LoginActivity : AppCompatActivity() {
         passwordInput = findViewById(R.id.passwordInput)
         loginButton = findViewById(R.id.loginButton)
         registerButton = findViewById(R.id.registerButton)
+        googleButton = findViewById(R.id.googleButton)
         progress = findViewById(R.id.loginProgress)
+
+        credentialManager = CredentialManager.create(this)
 
         loginButton.setOnClickListener { login() }
         registerButton.setOnClickListener { register() }
+        googleButton.setOnClickListener { googleLogin() }
     }
 
     private fun login() {
@@ -156,6 +175,69 @@ class LoginActivity : AppCompatActivity() {
             }
     }
 
+    private fun googleLogin() {
+        setLoading(true)
+
+        val googleIdOption = GetGoogleIdOption.Builder()
+            .setFilterByAuthorizedAccounts(false)
+            .setServerClientId(getString(R.string.web_client_id))
+            .build()
+
+        val request = GetCredentialRequest.Builder()
+            .addCredentialOption(googleIdOption)
+            .build()
+
+        lifecycleScope.launch {
+            try {
+                val result = credentialManager.getCredential(
+                    this@LoginActivity,
+                    request
+                )
+                handleResult(result)
+            } catch (e: GetCredentialCancellationException) {
+                setLoading(false)
+                Toast.makeText(this@LoginActivity, "Inloggning avbruten", Toast.LENGTH_SHORT).show()
+            } catch (e: NoCredentialException) {
+                setLoading(false)
+                Toast.makeText(this@LoginActivity, "Inga Google-konton på enheten", Toast.LENGTH_SHORT).show()
+            } catch (e: GetCredentialException) {
+                setLoading(false)
+                Toast.makeText(this@LoginActivity, "Error!: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun handleResult(result: GetCredentialResponse) {
+        if (result.credential is CustomCredential && result.credential.type == TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
+            try {
+                val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(result.credential.data)
+                val idToken = googleIdTokenCredential.idToken
+                authenticateWithFirebase(idToken)
+            } catch (e: Exception) {
+                setLoading(false)
+                Toast.makeText(this, "Autentisering misslyckades: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+        } else {
+            setLoading(false)
+            Toast.makeText(this, "Ogiltigt inloggningsformat", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun authenticateWithFirebase(idToken: String) {
+        val firebaseCredential = GoogleAuthProvider.getCredential(idToken, null)
+
+        auth.signInWithCredential(firebaseCredential)
+            .addOnSuccessListener {
+                setLoading(false)
+                Toast.makeText(this, "Inloggad med Google", Toast.LENGTH_SHORT).show()
+                goToMain()
+            }
+            .addOnFailureListener {
+                setLoading(false)
+                Toast.makeText(this, "Misslyckades: ${it.message}", Toast.LENGTH_SHORT).show()
+            }
+    }
+
     private fun readAndValidateInputs(): Pair<String, String>? {
         val email = emailInput.text?.toString()?.trim().orEmpty()
         val password = passwordInput.text?.toString().orEmpty()
@@ -175,6 +257,7 @@ class LoginActivity : AppCompatActivity() {
         progress.visibility = if (isLoading) View.VISIBLE else View.GONE
         loginButton.isEnabled = !isLoading
         registerButton.isEnabled = !isLoading
+        googleButton.isEnabled = !isLoading
         emailInput.isEnabled = !isLoading
         passwordInput.isEnabled = !isLoading
     }
