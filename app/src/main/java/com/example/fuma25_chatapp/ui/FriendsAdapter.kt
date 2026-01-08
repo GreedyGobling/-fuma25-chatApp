@@ -4,35 +4,43 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.example.fuma25_chatapp.R
 import com.example.fuma25_chatapp.data.User
 
-class FriendsAdapter : RecyclerView.Adapter<FriendsAdapter.FriendViewHolder>() {
+class FriendsAdapter :
+    ListAdapter<User, FriendsAdapter.FriendViewHolder>(Diff) {
 
-    private val friends = mutableListOf<User>()
+    // DiffUtil for smooth updates when friend list changes
+    private object Diff : DiffUtil.ItemCallback<User>() {
+        override fun areItemsTheSame(oldItem: User, newItem: User): Boolean {
+            return oldItem.uid == newItem.uid
+        }
 
-    fun submitList(newList: List<User>) {
-        friends.clear()
-        friends.addAll(newList)
-        notifyDataSetChanged() // update list
+        override fun areContentsTheSame(oldItem: User, newItem: User): Boolean {
+            return oldItem == newItem
+        }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): FriendViewHolder {
         val view = LayoutInflater.from(parent.context)
-            .inflate(android.R.layout.simple_list_item_2, parent, false)
+            .inflate(R.layout.item_friend, parent, false)
         return FriendViewHolder(view)
     }
 
     override fun onBindViewHolder(holder: FriendViewHolder, position: Int) {
-        val friend = friends[position]
-        holder.nameText.text = friend.name
-        holder.emailText.text = friend.email
+        holder.bind(getItem(position))
     }
 
-    override fun getItemCount(): Int = friends.size
-
     class FriendViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        val nameText: TextView = itemView.findViewById(android.R.id.text1)
-        val emailText: TextView = itemView.findViewById(android.R.id.text2)
+        private val nameText: TextView = itemView.findViewById(R.id.textFriendName)
+        private val emailText: TextView = itemView.findViewById(R.id.textFriendEmail)
+
+        fun bind(user: User) {
+            nameText.text = user.name
+            emailText.text = user.email
+        }
     }
 }

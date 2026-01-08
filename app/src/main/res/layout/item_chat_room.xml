@@ -5,23 +5,24 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginHorizontal="12dp"
-    android:layout_marginVertical="6dp"
-    app:cardCornerRadius="16dp"
-    app:cardElevation="6dp">
+    android:layout_marginVertical="@dimen/item_spacing"
+    app:cardCornerRadius="@dimen/button_radius"
+    app:cardElevation="6dp"
+    app:cardUseCompatPadding="true">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="14dp">
+        android:padding="@dimen/section_spacing">
 
         <TextView
             android:id="@+id/textTitle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:text="@string/room_title_placeholder"
-            android:textSize="18sp"
+            android:textSize="@dimen/text_normal"
             android:textStyle="bold"
+            android:textColor="@color/c_on_surface"
             android:maxLines="1"
             android:ellipsize="end"
             app:layout_constraintTop_toTopOf="parent"
@@ -33,10 +34,12 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/you_badge"
-            android:textSize="14sp"
+            android:textSize="@dimen/text_small"
             android:textStyle="bold"
-            android:paddingHorizontal="10dp"
-            android:paddingVertical="4dp"
+            android:textColor="@color/c_on_surface"
+            android:paddingHorizontal="@dimen/section_spacing"
+            android:paddingVertical="@dimen/item_spacing"
+            android:background="@drawable/bg_card"
             android:visibility="gone"
             app:layout_constraintBaseline_toBaselineOf="@id/textTitle"
             app:layout_constraintEnd_toEndOf="parent" />
@@ -46,10 +49,11 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:text="@string/members_placeholder"
-            android:textSize="14sp"
-            android:alpha="0.8"
+            android:textSize="@dimen/text_small"
+            android:textColor="@color/c_on_surface_muted"
             android:maxLines="1"
             android:ellipsize="end"
+            android:layout_marginTop="@dimen/item_spacing"
             app:layout_constraintTop_toBottomOf="@id/textTitle"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent" />
@@ -60,8 +64,9 @@
             android:layout_height="wrap_content"
             android:text="@string/long_press_to_delete"
             android:textSize="12sp"
-            android:alpha="0.7"
+            android:textColor="@color/c_on_surface_muted"
             android:visibility="gone"
+            android:layout_marginTop="@dimen/item_spacing"
             app:layout_constraintTop_toBottomOf="@id/textMembers"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent" />

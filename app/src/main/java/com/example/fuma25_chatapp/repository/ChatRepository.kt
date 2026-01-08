@@ -8,6 +8,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
+import com.google.firebase.firestore.SetOptions
 
 class ChatRepository {
 
@@ -26,7 +27,7 @@ class ChatRepository {
             .whereArrayContains("members", userId)
             .addSnapshotListener { snapshot, error ->
 
-                if (error != null && snapshot == null) {
+                if (error != null) {
                     onError(mapFirestoreError(error))
                     return@addSnapshotListener
                 }
@@ -184,6 +185,10 @@ class ChatRepository {
 
     /**
      * Find a friend by email (uses user-public collection).
+     *
+     * Notes:
+     * - Prevent adding yourself.
+     * - Use merge so the users/{uid} doc can be created if it doesn't exist yet.
      */
     fun addFriendByEmail(
         currentUserId: String,
@@ -209,8 +214,17 @@ class ChatRepository {
 
                 val friendUid = snapshot.documents.first().id
 
+                if (friendUid == currentUserId) {
+                    onError("Du kan inte lägga till dig själv")
+                    return@addOnSuccessListener
+                }
+
+                // Create doc if missing + add friend uid without duplicates
                 db.collection("users").document(currentUserId)
-                    .update("friends", FieldValue.arrayUnion(friendUid))
+                    .set(
+                        mapOf("friends" to FieldValue.arrayUnion(friendUid)),
+                        SetOptions.merge()
+                    )
                     .addOnSuccessListener { onSuccess() }
                     .addOnFailureListener { e ->
                         onError(e.message ?: "Kunde inte spara vän")

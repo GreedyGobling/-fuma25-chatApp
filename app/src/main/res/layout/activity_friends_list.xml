@@ -1,20 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:background="@color/c_bg"
+    android:fitsSystemWindows="true"
+    android:paddingTop="@dimen/screen_padding"
+    android:paddingBottom="@dimen/screen_padding">
 
     <TextView
+        android:id="@+id/tvFriendsTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Mina Vänner"
-        android:textSize="24sp"
+        android:textSize="@dimen/text_title"
         android:textStyle="bold"
-        android:layout_marginBottom="16dp"/>
+        android:textColor="@color/c_on_surface"
+        android:layout_marginStart="@dimen/screen_padding"
+        android:layout_marginEnd="@dimen/screen_padding"
+        android:layout_marginBottom="@dimen/section_spacing"/>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerViewFriends"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:paddingHorizontal="@dimen/screen_padding"
+        android:paddingTop="@dimen/item_spacing"
+        android:paddingBottom="@dimen/screen_padding"/>
 </LinearLayout>

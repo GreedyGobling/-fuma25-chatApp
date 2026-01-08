@@ -18,7 +18,6 @@ import com.example.fuma25_chatapp.repository.ChatRepository
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 
 class MainActivity : AppCompatActivity() {
@@ -48,17 +47,14 @@ class MainActivity : AppCompatActivity() {
         recyclerView = findViewById(R.id.recyclerView)
         fabCreateRoom = findViewById(R.id.fabCreateRoom)
 
-        // add friend btn
-        val btnAddFriend = findViewById<Button>(R.id.btnAddFriend)
-        btnAddFriend.setOnClickListener {
+        // Add friend button
+        findViewById<Button>(R.id.btnAddFriend).setOnClickListener {
             showAddFriendDialog()
         }
 
-        // see friendlist btn
-        val btnFriendsList = findViewById<Button>(R.id.btnFriendsList)
-        btnFriendsList.setOnClickListener {
-            val intent = Intent(this, FriendsListActivity::class.java)
-            startActivity(intent)
+        // Open friends list activity
+        findViewById<Button>(R.id.btnFriendsList).setOnClickListener {
+            startActivity(Intent(this, FriendsListActivity::class.java))
         }
 
         setSupportActionBar(toolbar)
@@ -81,11 +77,13 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
+
         val userId = auth.currentUser?.uid
         if (userId.isNullOrBlank()) {
             goToLoginClearBackstack()
             return
         }
+
         startListeningToRooms(userId)
     }
 
@@ -147,6 +145,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun deleteRoom(room: ChatRoom) {
         fabCreateRoom.isEnabled = false
+
         repository.deleteChatRoom(
             chatRoomId = room.id,
             onSuccess = {
@@ -180,10 +179,12 @@ class MainActivity : AppCompatActivity() {
 
     private fun showCreateRoomDialog() {
         val userId = auth.currentUser?.uid ?: return
+
         val input = EditText(this).apply {
             hint = "Ex: Klasschatten"
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
         }
+
         AlertDialog.Builder(this)
             .setTitle("Skapa chattrum")
             .setMessage("Skriv ett namn på chattrummet")
@@ -210,12 +211,14 @@ class MainActivity : AppCompatActivity() {
 
     private fun createRoom(userId: String, title: String) {
         fabCreateRoom.isEnabled = false
+
         repository.createChatRoom(
             title = title,
             creatorUserId = userId,
             onSuccess = { roomId ->
                 fabCreateRoom.isEnabled = true
                 toast("Chattrum skapat")
+
                 openChatRoom(
                     ChatRoom(
                         id = roomId,
@@ -233,54 +236,27 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showAddFriendDialog() {
-        val input = EditText(this)
-        input.hint = "Vännens e-post"
+        val input = EditText(this).apply {
+            hint = "Vännens e-post"
+            inputType = InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
+        }
+
         AlertDialog.Builder(this)
             .setTitle("Lägg till vän")
             .setView(input)
             .setPositiveButton("Lägg till") { _, _ ->
                 val email = input.text.toString().trim()
                 val myUid = auth.currentUser?.uid ?: return@setPositiveButton
-                repository.addFriendByEmail(myUid, email,
+
+                repository.addFriendByEmail(
+                    currentUserId = myUid,
+                    friendEmail = email,
                     onSuccess = { toast("Vän tillagd!") },
                     onError = { msg -> toast(msg) }
                 )
             }
             .setNegativeButton("Avbryt", null)
             .show()
-    }
-
-    private fun showFriendsListDialog() {
-        val myUid = auth.currentUser?.uid ?: return
-
-        //get firebase
-
-        FirebaseFirestore.getInstance().collection("users").document(myUid)
-            .get()
-            .addOnSuccessListener { snapshot ->
-                val friendIds = (snapshot.get("friends") as? List<*>)?.filterIsInstance<String>().orEmpty()
-
-                if (friendIds.isEmpty()) {
-                    toast("Din vänlista är tom. Lägg till vänner först!")
-                    return@addOnSuccessListener
-                }
-
-                FirebaseFirestore.getInstance().collection("users")
-                    .whereIn("uid", friendIds)
-                    .get()
-                    .addOnSuccessListener { friendDocs ->
-                        val friendNames = friendDocs.map {
-                            "${it.getString("name")} (${it.getString("email")})"
-                        }.toTypedArray()
-
-                        AlertDialog.Builder(this)
-                            .setTitle("Mina Vänner")
-                            .setItems(friendNames, null)
-                            .setPositiveButton("Stäng", null)
-                            .show()
-                    }
-            }
-            .addOnFailureListener { toast("Kunde inte ladda vänner") }
     }
 
     private companion object {

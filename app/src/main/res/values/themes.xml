@@ -1,9 +1,12 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
+
+    <!-- Base application theme -->
     <style name="Base.Theme.Fuma25chatapp" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        <item name="android:windowBackground">@color/c_bg</item>
+        <item name="colorPrimary">@color/c_primary</item>
+        <item name="colorOnPrimary">@color/c_on_primary</item>
     </style>
 
     <style name="Theme.Fuma25chatapp" parent="Base.Theme.Fuma25chatapp" />
+
 </resources>
