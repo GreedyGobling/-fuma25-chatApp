@@ -1,5 +1,7 @@
 package com.example.fuma25_chatapp.ui
 
+import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -51,7 +53,29 @@ class MessagesAdapter(
 
         fun bind(message: Message) {
             textMessage.text = message.text
-            // Background is defined in XML (bubble_me / bubble_other), so no need to set it here.
+
+            // Create bubble with color outline based on user ID
+            val drawable = GradientDrawable().apply {
+                shape = GradientDrawable.RECTANGLE
+                cornerRadius = 18f * itemView.resources.displayMetrics.density // 18dp
+                setColor(0xFF1E1E24.toInt()) // c_surface color
+                setStroke(
+                    (1 * itemView.resources.displayMetrics.density).toInt(), // 1dp stroke
+                    getUserColor(message.senderId)
+                )
+            }
+            textMessage.background = drawable
+        }
+
+        private fun getUserColor(userId: String): Int {
+
+            val hash = userId.hashCode()
+            val hue = (hash and 0xFFFF) % 360f
+
+            val saturation = 0.7f + ((hash shr 16) and 0xFF) / 255f * 0.3f // 0.7-1.0
+            val value = 0.8f + ((hash shr 8) and 0xFF) / 255f * 0.2f // 0.8-1.0
+
+            return Color.HSVToColor(floatArrayOf(hue, saturation, value))
         }
     }
 
