@@ -1,36 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginVertical="@dimen/item_spacing"
-    app:cardCornerRadius="@dimen/button_radius"
-    app:cardElevation="6dp"
-    app:cardUseCompatPadding="true">
+    android:orientation="horizontal"
+    android:padding="16dp"
+    android:layout_marginBottom="8dp"
+    android:background="@drawable/friend_item_bg"
+    android:gravity="center_vertical">
+
+    <TextView
+        android:id="@+id/tvFriendAvatar"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:gravity="center"
+        android:textColor="#FFFFFF"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:text="?" />
 
     <LinearLayout
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="@dimen/section_spacing">
+        android:layout_weight="1"
+        android:layout_marginStart="16dp"
+        android:orientation="vertical">
 
         <TextView
             android:id="@+id/textFriendName"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="@dimen/text_normal"
-            android:textStyle="bold"
-            android:textColor="@color/c_on_surface" />
+            android:textColor="@color/c_on_surface"
+            android:textSize="18sp"
+            android:textStyle="bold" />
 
         <TextView
             android:id="@+id/textFriendEmail"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="@dimen/text_small"
-            android:textColor="@color/c_on_surface_muted"
-            android:layout_marginTop="@dimen/item_spacing" />
-
+            android:textColor="#99FFFFFF"
+            android:textSize="14sp" />
     </LinearLayout>
-
-</androidx.cardview.widget.CardView>
+</LinearLayout>
