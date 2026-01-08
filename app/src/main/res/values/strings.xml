@@ -1,4 +1,22 @@
 <resources>
-    <string name="app_name">Fuma25-chatapp</string>
+  
+    <!-- App name -->
+    <string name="app_name">FUMA25 ChatApp</string>
+
+    <!-- Chat room UI -->
+    <string name="room_title_placeholder">Chattrum</string>
+    <string name="members_placeholder">Medlemmar: 0</string>
+    <string name="members_format">Medlemmar: %1$d</string>
+    <string name="you_badge">(du)</string>
+    <string name="long_press_to_delete">Håll inne för att radera</string>
+    <string name="untitled_chat">Namnlöst chattrum</string>
+
+    <!-- Chat screen -->
+    <string name="hint_skriv_meddelande">Skriv ett meddelande</string>
+    <string name="skicka">Skicka</string>
+    <string name="bjud_in_van">Bjud in vän</string>
+    
+    <!-- Google login -->
     <string name="web_client_id">938138367374-2rhre2e7ae2vnsi3v91m2mncouq3ngvo.apps.googleusercontent.com</string>
+
 </resources>

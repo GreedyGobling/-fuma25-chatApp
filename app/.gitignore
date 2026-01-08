@@ -11,3 +11,7 @@ local.properties
 
 # OS
 .DS_Store
+
+# Firebase
+google-services.json
+

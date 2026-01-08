@@ -24,10 +24,14 @@ import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential.Co
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import kotlinx.coroutines.launch
+import com.google.firebase.auth.FirebaseAuthUserCollisionException
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 
 class LoginActivity : AppCompatActivity() {
 
     private val auth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
+    private val db: FirebaseFirestore by lazy { FirebaseFirestore.getInstance() }
 
     private lateinit var emailInput: EditText
     private lateinit var passwordInput: EditText
@@ -40,8 +44,16 @@ class LoginActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Om redan inloggad -> hoppa direkt till MainActivity
-        if (auth.currentUser != null) {
+        // If already signed in -> ensure Firestore docs exist, then go straight to MainActivity
+        val existingUser = auth.currentUser
+        if (existingUser != null) {
+            val uid = existingUser.uid
+            val email = existingUser.email.orEmpty()
+
+            if (uid.isNotBlank() && email.isNotBlank()) {
+                ensureUserDocs(uid, email)
+            }
+
             goToMain()
             return
         }
@@ -67,14 +79,22 @@ class LoginActivity : AppCompatActivity() {
         setLoading(true)
 
         auth.signInWithEmailAndPassword(email, password)
-            .addOnSuccessListener {
+            .addOnSuccessListener { result ->
+                val uid = result.user?.uid.orEmpty()
+                val userEmail = result.user?.email.orEmpty()
+
+                // Ensure Firestore documents exist for friend search/invites
+                if (uid.isNotBlank() && userEmail.isNotBlank()) {
+                    ensureUserDocs(uid, userEmail)
+                }
+
                 setLoading(false)
-                Toast.makeText(this, "Inloggad", Toast.LENGTH_SHORT).show()
+                toast("Inloggad ✅")
                 goToMain()
             }
-            .addOnFailureListener {
+            .addOnFailureListener { e ->
                 setLoading(false)
-                Toast.makeText(this, "Login misslyckades: ${it.message}", Toast.LENGTH_LONG).show()
+                toast("Inloggning misslyckades: ${e.message}")
             }
     }
 
@@ -83,14 +103,75 @@ class LoginActivity : AppCompatActivity() {
         setLoading(true)
 
         auth.createUserWithEmailAndPassword(email, password)
-            .addOnSuccessListener {
+            .addOnSuccessListener { result ->
+                val uid = result.user?.uid.orEmpty()
+                val userEmail = result.user?.email.orEmpty()
+
+                // Ensure Firestore documents exist for friend search/invites
+                if (uid.isNotBlank() && userEmail.isNotBlank()) {
+                    ensureUserDocs(uid, userEmail)
+                }
+
                 setLoading(false)
-                Toast.makeText(this, "Konto skapat!", Toast.LENGTH_SHORT).show()
+                toast("Konto skapat ✅")
                 goToMain()
             }
-            .addOnFailureListener {
+            .addOnFailureListener { e ->
                 setLoading(false)
-                Toast.makeText(this, "Registrering misslyckades: ${it.message}", Toast.LENGTH_LONG).show()
+
+                val msg = when (e) {
+                    is FirebaseAuthUserCollisionException ->
+                        "Det finns redan ett konto med den e-posten. Tryck på Logga in istället."
+                    else -> e.message ?: "Registrering misslyckades."
+                }
+
+                toast(msg)
+            }
+    }
+
+    /**
+     * Ensures Firestore documents exist:
+     * - users/{uid} (private)
+     * - user-public/{uid} (public searchable)
+     *
+     * Uses merge to avoid overwriting existing data.
+     */
+    private fun ensureUserDocs(uid: String, email: String) {
+        val emailLower = email.trim().lowercase()
+        if (emailLower.isBlank()) return
+
+        // Create/merge private user doc
+        db.collection("users").document(uid)
+            .set(
+                mapOf(
+                    // Keep friends list if it already exists
+                    "friends" to emptyList<String>()
+                ),
+                SetOptions.merge()
+            )
+            .addOnFailureListener { e ->
+                Toast.makeText(
+                    this,
+                    "Kunde inte skapa users-doc: ${e.message}",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+
+        // Create/merge public searchable profile
+        db.collection("user-public").document(uid)
+            .set(
+                mapOf(
+                    "emailLower" to emailLower,
+                    "name" to email.substringBefore("@")
+                ),
+                SetOptions.merge()
+            )
+            .addOnFailureListener { e ->
+                Toast.makeText(
+                    this,
+                    "Kunde inte skapa user-public: ${e.message}",
+                    Toast.LENGTH_LONG
+                ).show()
             }
     }
 
@@ -162,15 +243,13 @@ class LoginActivity : AppCompatActivity() {
         val password = passwordInput.text?.toString().orEmpty()
 
         if (email.isBlank() || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            Toast.makeText(this, "Skriv en giltig e-post", Toast.LENGTH_SHORT).show()
+            toast("Skriv en giltig e-post")
             return null
         }
-
         if (password.length < 6) {
-            Toast.makeText(this, "Lösenord måste vara minst 6 tecken", Toast.LENGTH_SHORT).show()
+            toast("Lösenord måste vara minst 6 tecken")
             return null
         }
-
         return email to password
     }
 
@@ -184,8 +263,11 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun goToMain() {
-        val intent = Intent(this, MainActivity::class.java)
-        startActivity(intent)
+        startActivity(Intent(this, MainActivity::class.java))
         finish()
+    }
+
+    private fun toast(msg: String) {
+        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
     }
 }
