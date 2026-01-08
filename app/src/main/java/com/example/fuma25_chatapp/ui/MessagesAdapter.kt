@@ -50,9 +50,18 @@ class MessagesAdapter(
 
     class MessageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val textMessage: TextView = itemView.findViewById(R.id.textMessage)
+        private val textSenderName: TextView? = itemView.findViewById(R.id.textSenderName)
 
         fun bind(message: Message) {
             textMessage.text = message.text
+
+
+            textSenderName?.text = message.senderName
+
+            if (viewType == VIEW_TYPE_ME) {
+                textMessage.setBackgroundResource(R.drawable.bubble_me)
+            } else {
+                textMessage.setBackgroundResource(R.drawable.bubble_other)
 
             // Create bubble with color outline based on user ID
             val drawable = GradientDrawable().apply {
@@ -63,6 +72,7 @@ class MessagesAdapter(
                     (1 * itemView.resources.displayMetrics.density).toInt(), // 1dp stroke
                     getUserColor(message.senderId)
                 )
+
             }
             textMessage.background = drawable
         }
@@ -84,4 +94,3 @@ class MessagesAdapter(
         private const val VIEW_TYPE_OTHER = 2
     }
 }
-

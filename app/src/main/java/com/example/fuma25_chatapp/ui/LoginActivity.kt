@@ -12,6 +12,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.example.fuma25_chatapp.R
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
+import com.google.firebase.auth.userProfileChangeRequest
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 import androidx.credentials.CredentialManager
@@ -44,7 +45,6 @@ class LoginActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // If already signed in -> ensure Firestore docs exist, then go straight to MainActivity
         val existingUser = auth.currentUser
         if (existingUser != null) {
             val uid = existingUser.uid
@@ -83,7 +83,6 @@ class LoginActivity : AppCompatActivity() {
                 val uid = result.user?.uid.orEmpty()
                 val userEmail = result.user?.email.orEmpty()
 
-                // Ensure Firestore documents exist for friend search/invites
                 if (uid.isNotBlank() && userEmail.isNotBlank()) {
                     ensureUserDocs(uid, userEmail)
                 }
@@ -107,7 +106,6 @@ class LoginActivity : AppCompatActivity() {
                 val uid = result.user?.uid.orEmpty()
                 val userEmail = result.user?.email.orEmpty()
 
-                // Ensure Firestore documents exist for friend search/invites
                 if (uid.isNotBlank() && userEmail.isNotBlank()) {
                     ensureUserDocs(uid, userEmail)
                 }
@@ -118,61 +116,41 @@ class LoginActivity : AppCompatActivity() {
             }
             .addOnFailureListener { e ->
                 setLoading(false)
-
                 val msg = when (e) {
                     is FirebaseAuthUserCollisionException ->
                         "Det finns redan ett konto med den e-posten. Tryck på Logga in istället."
                     else ->
                         "Registrering misslyckades."
                 }
-
                 toast(msg)
             }
     }
 
-    /**
-     * Ensures Firestore documents exist:
-     * - users/{uid} (private)
-     * - user-public/{uid} (public searchable)
-     *
-     * Uses merge to avoid overwriting existing data.
-     */
     private fun ensureUserDocs(uid: String, email: String) {
-        val emailLower = email.trim().lowercase()
-        if (emailLower.isBlank()) return
+        val emailLower = email.lowercase()
+        val nameFromEmail = email.substringBefore("@")
 
-        // Create/merge private user doc
-        db.collection("users").document(uid)
-            .set(
-                mapOf(
-                    // Keep friends list if it already exists
-                    "friends" to emptyList<String>()
-                ),
-                SetOptions.merge()
-            )
-            .addOnFailureListener { e ->
-                Toast.makeText(
-                    this,
-                    "Kunde inte skapa users-doc: ${e.message}",
-                    Toast.LENGTH_LONG
-                ).show()
+        val user = auth.currentUser
+        if (user?.displayName.isNullOrBlank()) {
+            val profileUpdates = userProfileChangeRequest {
+                displayName = nameFromEmail
             }
+            user?.updateProfile(profileUpdates)
+        }
 
-        // Create/merge public searchable profile
+        db.collection("users").document(uid)
+            .set(mapOf("uid" to uid, "email" to emailLower), SetOptions.merge())
+
         db.collection("user-public").document(uid)
             .set(
                 mapOf(
                     "emailLower" to emailLower,
-                    "name" to email.substringBefore("@")
+                    "name" to nameFromEmail
                 ),
                 SetOptions.merge()
             )
             .addOnFailureListener { e ->
-                Toast.makeText(
-                    this,
-                    "Kunde inte skapa user-public: ${e.message}",
-                    Toast.LENGTH_LONG
-                ).show()
+                toast("Kunde inte uppdatera profil: ${e.message}")
             }
     }
 

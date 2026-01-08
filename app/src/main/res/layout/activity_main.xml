@@ -7,7 +7,14 @@
     android:background="@color/c_bg"
     android:fitsSystemWindows="true">
 
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="ChatApp"/>
+
     <com.google.android.material.appbar.MaterialToolbar
+
         android:id="@+id/toolbar"
         android:layout_width="0dp"
         android:layout_height="?attr/actionBarSize"
@@ -49,6 +56,8 @@
             android:layout_marginStart="@dimen/item_spacing"
             android:text="Lägg till vän"/>
     </LinearLayout>
+
+
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerView"

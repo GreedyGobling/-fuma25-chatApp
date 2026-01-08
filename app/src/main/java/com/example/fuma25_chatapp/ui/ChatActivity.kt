@@ -88,6 +88,26 @@ class ChatActivity : AppCompatActivity() {
     }
 
     private fun sendMessage() {
+        val text = messageInput.text.toString().trim()
+        if (text.isEmpty()) return
+
+        val user = auth.currentUser ?: return
+
+        val currentUserName = when {
+            !user.displayName.isNullOrBlank() -> user.displayName
+            !user.email.isNullOrBlank() -> user.email!!.substringBefore("@")
+            else -> "Användare"
+        }
+
+        val message = com.example.fuma25_chatapp.data.Message(
+            text = text,
+            senderId = user.uid,
+            senderName = currentUserName!!,
+            createdAt = com.google.firebase.Timestamp.now()
+        )
+
+        repository.sendMessage(chatRoomId, message,
+
         val userId = auth.currentUser?.uid
         if (userId.isNullOrBlank()) {
             toast("Du är inte inloggad")
@@ -100,6 +120,7 @@ class ChatActivity : AppCompatActivity() {
             chatRoomId = chatRoomId,
             senderId = userId,
             text = text,
+
             onSuccess = { messageInput.text.clear() },
             onError = { toast(it) }
         )
