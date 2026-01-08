@@ -1,5 +1,15 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
+    <color name="c_primary">#6C4DFF</color>
+    <color name="c_on_primary">#FFFFFF</color>
+
+    <color name="c_bg">#121218</color>
+    <color name="c_surface">#1E1E24</color>
+    <color name="c_on_surface">#FFFFFF</color>
+    <color name="c_on_surface_muted">#B8B8C7</color>
+
+    <color name="c_outline">#2C2C35</color>
+
+    <color name="bubble_bg_me">#F3E5F5</color>
+    <color name="bubble_bg_other">#FFFFFF</color>
+
 </resources>

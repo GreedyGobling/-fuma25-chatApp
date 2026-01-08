@@ -3,13 +3,14 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@color/c_bg">
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerViewMessages"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:padding="12dp"
+        android:padding="@dimen/space_l"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toTopOf="@id/messageContainer"
         app:layout_constraintStart_toStartOf="parent"
@@ -20,8 +21,9 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:padding="10dp"
-        android:background="#FFFFFF"
+        android:padding="@dimen/space_l"
+        android:background="@color/c_bg"
+        android:gravity="center_vertical"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
@@ -29,29 +31,33 @@
         <EditText
             android:id="@+id/editTextMessage"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="@dimen/control_height"
             android:layout_weight="1"
-            android:minHeight="48dp"
+            android:background="@drawable/bg_input"
             android:hint="@string/hint_skriv_meddelande"
-            android:padding="12dp"/>
-
-        <ImageButton
-            android:id="@+id/buttonSend"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:src="@android:drawable/ic_menu_send"
-            android:contentDescription="@string/skicka"
-            android:background="?attr/selectableItemBackgroundBorderless"/>
+            android:paddingHorizontal="@dimen/space_l"
+            android:textColor="@color/c_on_surface"
+            android:textColorHint="@color/c_on_surface_muted"
+            android:inputType="textCapSentences"/>
 
         <ImageButton
             android:id="@+id/btnInviteFriend"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
+            android:layout_width="@dimen/icon_button_size"
+            android:layout_height="@dimen/icon_button_size"
+            android:layout_marginStart="@dimen/space_s"
             android:src="@android:drawable/ic_menu_add"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/bjud_in_van"
-            android:layout_margin="8dp" />
+            android:background="@drawable/bg_card"
+            android:contentDescription="@string/bjud_in_van"/>
+
+        <ImageButton
+            android:id="@+id/buttonSend"
+            android:layout_width="@dimen/icon_button_size"
+            android:layout_height="@dimen/icon_button_size"
+            android:layout_marginStart="@dimen/space_s"
+            android:src="@android:drawable/ic_menu_send"
+            android:background="@drawable/bg_card"
+            android:contentDescription="@string/skicka"/>
+
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
-

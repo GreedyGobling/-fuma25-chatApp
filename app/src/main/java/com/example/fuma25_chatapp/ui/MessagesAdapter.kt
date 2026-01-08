@@ -32,7 +32,7 @@ class MessagesAdapter(
         }
 
         val view = LayoutInflater.from(parent.context).inflate(layoutId, parent, false)
-        return MessageViewHolder(view)
+        return MessageViewHolder(view, viewType)
     }
 
     override fun onBindViewHolder(holder: MessageViewHolder, position: Int) {
@@ -41,11 +41,22 @@ class MessagesAdapter(
 
     override fun getItemCount(): Int = messages.size
 
-    class MessageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+    class MessageViewHolder(
+        itemView: View,
+        private val viewType: Int
+    ) : RecyclerView.ViewHolder(itemView) {
+
         private val textMessage: TextView = itemView.findViewById(R.id.textMessage)
 
         fun bind(message: Message) {
             textMessage.text = message.text
+
+            // Apply bubble background (rounded + stroke) based on sender
+            if (viewType == VIEW_TYPE_ME) {
+                textMessage.setBackgroundResource(R.drawable.bubble_me)
+            } else {
+                textMessage.setBackgroundResource(R.drawable.bubble_other)
+            }
         }
     }
 

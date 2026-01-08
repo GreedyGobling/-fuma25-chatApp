@@ -1,0 +1,16 @@
+<resources>
+    <!-- Spacing -->
+    <dimen name="space_xs">4dp</dimen>
+    <dimen name="space_s">8dp</dimen>
+    <dimen name="space_m">12dp</dimen>
+    <dimen name="space_l">16dp</dimen>
+    <dimen name="space_xl">24dp</dimen>
+
+    <!-- Corner radius -->
+    <dimen name="radius_m">12dp</dimen>
+    <dimen name="radius_l">16dp</dimen>
+
+    <!-- Controls -->
+    <dimen name="control_height">48dp</dimen>
+    <dimen name="icon_button_size">48dp</dimen>
+</resources>

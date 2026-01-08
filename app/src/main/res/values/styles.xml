@@ -1,0 +1,23 @@
+<resources>
+
+    <!-- App theme (keep your existing theme if you already have one) -->
+    <style name="Theme.FumaChat" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/c_primary</item>
+        <item name="android:colorBackground">@color/c_bg</item>
+    </style>
+
+    <!-- Primary button -->
+    <style name="Widget.FumaChat.Button.Primary" parent="Widget.Material3.Button">
+        <item name="android:layout_height">@dimen/control_height</item>
+        <item name="cornerRadius">@dimen/radius_l</item>
+        <item name="android:textAllCaps">false</item>
+    </style>
+
+    <!-- Icon button (48x48, same shape) -->
+    <style name="Widget.FumaChat.IconButton" parent="Widget.Material3.Button.Icon">
+        <item name="android:layout_width">@dimen/icon_button_size</item>
+        <item name="android:layout_height">@dimen/icon_button_size</item>
+        <item name="cornerRadius">@dimen/radius_l</item>
+    </style>
+
+</resources>
