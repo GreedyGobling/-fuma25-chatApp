@@ -4,6 +4,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.example.fuma25_chatapp.R
 import com.example.fuma25_chatapp.data.ChatRoom
@@ -12,14 +14,17 @@ class ChatRoomsAdapter(
     private val currentUserId: String,
     private val onClick: (ChatRoom) -> Unit,
     private val onDeleteRequested: (ChatRoom) -> Unit
-) : RecyclerView.Adapter<ChatRoomsAdapter.ChatRoomViewHolder>() {
+) : ListAdapter<ChatRoom, ChatRoomsAdapter.ChatRoomViewHolder>(Diff) {
 
-    private val items = mutableListOf<ChatRoom>()
+    // DiffUtil makes room list updates smooth and avoids full refresh
+    private object Diff : DiffUtil.ItemCallback<ChatRoom>() {
+        override fun areItemsTheSame(oldItem: ChatRoom, newItem: ChatRoom): Boolean {
+            return oldItem.id == newItem.id
+        }
 
-    fun submitList(newItems: List<ChatRoom>) {
-        items.clear()
-        items.addAll(newItems)
-        notifyDataSetChanged()
+        override fun areContentsTheSame(oldItem: ChatRoom, newItem: ChatRoom): Boolean {
+            return oldItem == newItem
+        }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ChatRoomViewHolder {
@@ -30,14 +35,12 @@ class ChatRoomsAdapter(
 
     override fun onBindViewHolder(holder: ChatRoomViewHolder, position: Int) {
         holder.bind(
-            room = items[position],
+            room = getItem(position),
             currentUserId = currentUserId,
             onClick = onClick,
             onDeleteRequested = onDeleteRequested
         )
     }
-
-    override fun getItemCount(): Int = items.size
 
     class ChatRoomViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
 
@@ -65,14 +68,16 @@ class ChatRoomsAdapter(
             itemView.setOnClickListener { onClick(room) }
 
             // Attach long-press only if deletion is allowed
-            if (canDelete) {
-                itemView.setOnLongClickListener {
-                    onDeleteRequested(room)
-                    true
+            itemView.setOnLongClickListener(
+                if (canDelete) {
+                    View.OnLongClickListener {
+                        onDeleteRequested(room)
+                        true
+                    }
+                } else {
+                    null
                 }
-            } else {
-                itemView.setOnLongClickListener(null)
-            }
+            )
         }
     }
 }

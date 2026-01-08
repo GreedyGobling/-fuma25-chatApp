@@ -4,24 +4,31 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.example.fuma25_chatapp.R
 import com.example.fuma25_chatapp.data.Message
 
 class MessagesAdapter(
     private val currentUserId: String
-) : RecyclerView.Adapter<MessagesAdapter.MessageViewHolder>() {
+) : ListAdapter<Message, MessagesAdapter.MessageViewHolder>(Diff) {
 
-    private val messages = mutableListOf<Message>()
+    // DiffUtil makes list updates smooth and avoids full refresh
+    private object Diff : DiffUtil.ItemCallback<Message>() {
+        override fun areItemsTheSame(oldItem: Message, newItem: Message): Boolean {
+            // Prefer stable Firestore document id
+            return oldItem.id == newItem.id
+        }
 
-    fun submitList(newMessages: List<Message>) {
-        messages.clear()
-        messages.addAll(newMessages)
-        notifyDataSetChanged()
+        override fun areContentsTheSame(oldItem: Message, newItem: Message): Boolean {
+            return oldItem == newItem
+        }
     }
 
     override fun getItemViewType(position: Int): Int {
-        return if (messages[position].senderId == currentUserId) VIEW_TYPE_ME else VIEW_TYPE_OTHER
+        val msg = getItem(position)
+        return if (msg.senderId == currentUserId) VIEW_TYPE_ME else VIEW_TYPE_OTHER
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MessageViewHolder {
@@ -32,31 +39,19 @@ class MessagesAdapter(
         }
 
         val view = LayoutInflater.from(parent.context).inflate(layoutId, parent, false)
-        return MessageViewHolder(view, viewType)
+        return MessageViewHolder(view)
     }
 
     override fun onBindViewHolder(holder: MessageViewHolder, position: Int) {
-        holder.bind(messages[position])
+        holder.bind(getItem(position))
     }
 
-    override fun getItemCount(): Int = messages.size
-
-    class MessageViewHolder(
-        itemView: View,
-        private val viewType: Int
-    ) : RecyclerView.ViewHolder(itemView) {
-
+    class MessageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val textMessage: TextView = itemView.findViewById(R.id.textMessage)
 
         fun bind(message: Message) {
             textMessage.text = message.text
-
-            // Apply bubble background (rounded + stroke) based on sender
-            if (viewType == VIEW_TYPE_ME) {
-                textMessage.setBackgroundResource(R.drawable.bubble_me)
-            } else {
-                textMessage.setBackgroundResource(R.drawable.bubble_other)
-            }
+            // Background is defined in XML (bubble_me / bubble_other), so no need to set it here.
         }
     }
 
@@ -65,3 +60,4 @@ class MessagesAdapter(
         private const val VIEW_TYPE_OTHER = 2
     }
 }
+

@@ -94,7 +94,7 @@ class LoginActivity : AppCompatActivity() {
             }
             .addOnFailureListener { e ->
                 setLoading(false)
-                toast("Inloggning misslyckades: ${e.message}")
+                toast(authErrorSv(e))
             }
     }
 
@@ -122,7 +122,8 @@ class LoginActivity : AppCompatActivity() {
                 val msg = when (e) {
                     is FirebaseAuthUserCollisionException ->
                         "Det finns redan ett konto med den e-posten. Tryck på Logga in istället."
-                    else -> e.message ?: "Registrering misslyckades."
+                    else ->
+                        "Registrering misslyckades."
                 }
 
                 toast(msg)
@@ -269,5 +270,21 @@ class LoginActivity : AppCompatActivity() {
 
     private fun toast(msg: String) {
         Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+    }
+
+    // Minimal Swedish mapping to avoid showing Firebase's English e.message in the UI
+    private fun authErrorSv(e: Exception): String {
+        return when (e.message) {
+            "The supplied auth credential is incorrect, malformed or has expired." ->
+                "Fel e-post eller lösenord."
+            "There is no user record corresponding to this identifier. The user may have been deleted." ->
+                "Det finns inget konto med den e-posten."
+            "The password is invalid or the user does not have a password." ->
+                "Fel e-post eller lösenord."
+            "A network error (such as timeout, interrupted connection or unreachable host) has occurred." ->
+                "Nätverksfel. Kontrollera internetanslutningen."
+            else ->
+                "Inloggning misslyckades."
+        }
     }
 }

@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:paddingStart="12dp"
-    android:paddingEnd="12dp"
-    android:paddingTop="6dp"
-    android:paddingBottom="6dp">
+    android:paddingHorizontal="@dimen/screen_padding"
+    android:paddingVertical="@dimen/item_spacing">
 
     <TextView
         android:id="@+id/textMessage"
@@ -14,10 +13,13 @@
         android:layout_gravity="start"
         android:background="@drawable/bubble_other"
         android:maxWidth="280dp"
-        android:textColor="@color/c_on_surface"
-        android:textSize="15sp"
         android:text="Hej!"
+        android:textSize="@dimen/text_normal"
+        android:textColor="@color/c_on_surface"
+        android:paddingHorizontal="@dimen/section_spacing"
+        android:paddingVertical="@dimen/item_spacing"
         android:lineSpacingExtra="1dp" />
 
 </FrameLayout>
+
 

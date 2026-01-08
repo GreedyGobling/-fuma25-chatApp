@@ -3,13 +3,14 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@color/c_bg">
 
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/toolbar"
         android:layout_width="0dp"
         android:layout_height="?attr/actionBarSize"
-        android:backgroundTint="#5F14E4"
+        android:backgroundTint="@color/c_primary"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -21,34 +22,37 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:padding="8dp"
+        android:padding="@dimen/item_spacing"
         app:layout_constraintTop_toBottomOf="@id/toolbar"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
         <Button
             android:id="@+id/btnFriendsList"
+            style="@style/PrimaryButton"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="@dimen/button_height"
             android:layout_weight="1"
             android:text="Vänlista"
-            android:layout_marginEnd="4dp"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton"/>
+            android:layout_marginTop="0dp"
+            android:layout_marginEnd="@dimen/item_spacing"/>
 
         <Button
             android:id="@+id/btnAddFriend"
+            style="@style/PrimaryButton"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="@dimen/button_height"
             android:layout_weight="1"
             android:text="Lägg till vän"
-            android:layout_marginStart="4dp"/>
+            android:layout_marginTop="0dp"
+            android:layout_marginStart="@dimen/item_spacing"/>
     </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerView"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:padding="8dp"
+        android:padding="@dimen/item_spacing"
         android:clipToPadding="false"
         app:layout_constraintTop_toBottomOf="@id/friendsMenuContainer"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -62,9 +66,9 @@
         android:contentDescription="Skapa chattrum"
         android:src="@android:drawable/ic_input_add"
         app:tint="@android:color/white"
-        app:backgroundTint="#5F14E4"
+        app:backgroundTint="@color/c_primary"
         android:elevation="12dp"
-        android:layout_margin="24dp"
+        android:layout_margin="@dimen/screen_padding"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 

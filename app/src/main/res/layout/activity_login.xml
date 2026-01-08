@@ -6,15 +6,12 @@
     android:layout_height="match_parent"
     android:fillViewport="true"
     android:fitsSystemWindows="true"
-    android:background="#F5F7FA">
+    android:background="@color/c_bg"
+    android:padding="@dimen/screen_padding">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:paddingStart="24dp"
-        android:paddingEnd="24dp"
-        android:paddingTop="24dp"
-        android:paddingBottom="24dp">
+        android:layout_height="match_parent">
 
         <!-- Container centered in the screen -->
         <LinearLayout
@@ -35,8 +32,8 @@
                 android:text="FUMA25 ChatApp"
                 android:textSize="28sp"
                 android:textStyle="bold"
-                android:textColor="#1A1A1A"
-                android:layout_marginBottom="8dp"
+                android:textColor="@color/c_on_surface"
+                android:layout_marginBottom="@dimen/item_spacing"
                 android:gravity="center"/>
 
             <TextView
@@ -44,42 +41,43 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Logga in eller skapa konto"
-                android:textSize="14sp"
-                android:textColor="#666666"
-                android:layout_marginBottom="20dp"
+                android:textSize="@dimen/text_small"
+                android:textColor="@color/c_on_surface_muted"
+                android:layout_marginBottom="@dimen/section_spacing"
                 android:gravity="center"/>
 
             <EditText
                 android:id="@+id/emailInput"
                 android:layout_width="match_parent"
-                android:layout_height="52dp"
+                android:layout_height="@dimen/button_height"
                 android:hint="E-post"
-                android:paddingHorizontal="16dp"
-                android:background="@android:drawable/edit_text"
+                android:paddingHorizontal="@dimen/screen_padding"
+                android:background="@drawable/bg_input"
                 android:inputType="textEmailAddress"
-                android:layout_marginBottom="12dp"/>
+                android:layout_marginBottom="@dimen/item_spacing"
+                android:textColor="@color/c_on_surface"
+                android:textColorHint="@color/c_on_surface_muted"/>
 
             <EditText
                 android:id="@+id/passwordInput"
                 android:layout_width="match_parent"
-                android:layout_height="52dp"
+                android:layout_height="@dimen/button_height"
                 android:hint="Lösenord"
-                android:paddingHorizontal="16dp"
-                android:background="@android:drawable/edit_text"
+                android:paddingHorizontal="@dimen/screen_padding"
+                android:background="@drawable/bg_input"
                 android:inputType="textPassword"
-                android:layout_marginBottom="16dp"/>
+                android:layout_marginBottom="@dimen/section_spacing"
+                android:textColor="@color/c_on_surface"
+                android:textColorHint="@color/c_on_surface_muted"/>
 
             <Button
                 android:id="@+id/loginButton"
-                android:layout_width="match_parent"
-                android:layout_height="52dp"
-                android:text="Logga in"
-                android:layout_marginBottom="12dp"/>
+                style="@style/PrimaryButton"
+                android:text="Logga in"/>
 
             <Button
                 android:id="@+id/registerButton"
-                android:layout_width="match_parent"
-                android:layout_height="52dp"
+                style="@style/PrimaryButton"
                 android:text="Skapa konto"/>
 
             <Button
@@ -93,7 +91,7 @@
                 android:id="@+id/loginProgress"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="@dimen/section_spacing"
                 android:visibility="gone"/>
 
         </LinearLayout>

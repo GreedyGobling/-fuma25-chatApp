@@ -57,6 +57,7 @@ class ChatActivity : AppCompatActivity() {
         adapter = MessagesAdapter(currentUserId)
 
         recyclerView.layoutManager = LinearLayoutManager(this).apply {
+            // Keeps the list anchored at the bottom like a chat
             stackFromEnd = true
         }
         recyclerView.adapter = adapter
@@ -66,9 +67,10 @@ class ChatActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
+
         messagesListener?.remove()
         messagesListener = repository.listenToMessages(
-            chatRoomId,
+            chatRoomId = chatRoomId,
             onUpdate = { messages ->
                 adapter.submitList(messages)
                 if (messages.isNotEmpty()) {
@@ -82,24 +84,35 @@ class ChatActivity : AppCompatActivity() {
     override fun onStop() {
         super.onStop()
         messagesListener?.remove()
+        messagesListener = null
     }
 
     private fun sendMessage() {
-        val userId = auth.currentUser?.uid ?: return
+        val userId = auth.currentUser?.uid
+        if (userId.isNullOrBlank()) {
+            toast("Du är inte inloggad")
+            return
+        }
+
         val text = messageInput.text.toString()
 
         repository.sendMessage(
-            chatRoomId,
-            userId,
-            text,
+            chatRoomId = chatRoomId,
+            senderId = userId,
+            text = text,
             onSuccess = { messageInput.text.clear() },
             onError = { toast(it) }
         )
     }
 
     private fun showInviteFriendDialog() {
-        val myUid = auth.currentUser?.uid ?: return
+        val myUid = auth.currentUser?.uid
+        if (myUid.isNullOrBlank()) {
+            toast("Du är inte inloggad")
+            return
+        }
 
+        // Note: whereIn supports max 10 values. We intentionally limit to 10 here.
         FirebaseFirestore.getInstance().collection("users").document(myUid)
             .get()
             .addOnSuccessListener { snapshot ->
@@ -111,11 +124,20 @@ class ChatActivity : AppCompatActivity() {
                     return@addOnSuccessListener
                 }
 
+                if (friendIds.size > 10) {
+                    toast("Visar bara de 10 första vännerna (Firestore-begränsning).")
+                }
+
                 FirebaseFirestore.getInstance()
                     .collection("user-public")
                     .whereIn(FieldPath.documentId(), friendIds.take(10))
                     .get()
                     .addOnSuccessListener { docs ->
+                        if (docs.isEmpty) {
+                            toast("Kunde inte hitta vänprofiler")
+                            return@addOnSuccessListener
+                        }
+
                         val names = docs.map { it.getString("name") ?: "Okänd" }.toTypedArray()
                         val uids = docs.map { it.id }
 
@@ -127,13 +149,19 @@ class ChatActivity : AppCompatActivity() {
                             .setNegativeButton("Avbryt", null)
                             .show()
                     }
+                    .addOnFailureListener { e ->
+                        toast(e.message ?: "Kunde inte ladda vänlista")
+                    }
+            }
+            .addOnFailureListener { e ->
+                toast(e.message ?: "Kunde inte läsa din vänlista")
             }
     }
 
     private fun inviteFriend(friendUid: String) {
         repository.inviteFriendToRoom(
-            chatRoomId,
-            friendUid,
+            chatRoomId = chatRoomId,
+            friendUid = friendUid,
             onSuccess = { toast("Vän tillagd i rummet") },
             onError = { toast(it) }
         )

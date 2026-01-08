@@ -13,54 +13,76 @@ import com.google.firebase.firestore.FirebaseFirestore
 
 class FriendsListActivity : AppCompatActivity() {
 
+    private val auth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
+    private val db: FirebaseFirestore by lazy { FirebaseFirestore.getInstance() }
+
     private lateinit var friendsAdapter: FriendsAdapter
+    private lateinit var recyclerView: RecyclerView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_friends_list)
 
-        val recyclerView = findViewById<RecyclerView>(R.id.recyclerViewFriends)
+        recyclerView = findViewById(R.id.recyclerViewFriends)
         friendsAdapter = FriendsAdapter()
+
         recyclerView.adapter = friendsAdapter
         recyclerView.layoutManager = LinearLayoutManager(this)
+        recyclerView.clipToPadding = false
 
         loadFriends()
     }
 
     private fun loadFriends() {
-        val db = FirebaseFirestore.getInstance()
-        val myUid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        val myUid = auth.currentUser?.uid
+        if (myUid.isNullOrBlank()) {
+            toast("Du är inte inloggad")
+            finish()
+            return
+        }
 
         db.collection("users").document(myUid)
             .get()
             .addOnSuccessListener { snapshot ->
-                val friendIds = (snapshot.get("friends") as? List<*>)?.filterIsInstance<String>().orEmpty()
+                val friendIds =
+                    (snapshot.get("friends") as? List<*>)?.filterIsInstance<String>().orEmpty()
 
                 if (friendIds.isEmpty()) {
-                    Toast.makeText(this, "Din vänlista är tom", Toast.LENGTH_SHORT).show()
+                    toast("Din vänlista är tom")
+                    friendsAdapter.submitList(emptyList())
                     return@addOnSuccessListener
                 }
 
+                // whereIn supports max 10 values -> limit to 10 for now
+                if (friendIds.size > 10) {
+                    toast("Visar bara de 10 första vännerna (Firestore-begränsning).")
+                }
+
                 db.collection("user-public")
-                    .whereIn(FieldPath.documentId(), friendIds)
+                    .whereIn(FieldPath.documentId(), friendIds.take(10))
                     .get()
                     .addOnSuccessListener { friendDocs ->
-                        val friendsList = friendDocs.mapNotNull { doc ->
+                        val friendsList = friendDocs.map { doc ->
                             User(
                                 uid = doc.id,
                                 name = doc.getString("name") ?: "Okänd",
-                                email = doc.getString("emailLower") ?: "" // Mappar emailLower till email
+                                // Mapping emailLower to email display
+                                email = doc.getString("emailLower") ?: ""
                             )
                         }
 
                         friendsAdapter.submitList(friendsList)
                     }
                     .addOnFailureListener { e ->
-                        Toast.makeText(this, "Kunde inte hämta detaljer: ${e.message}", Toast.LENGTH_SHORT).show()
+                        toast(e.message ?: "Kunde inte hämta detaljer")
                     }
             }
-            .addOnFailureListener {
-                Toast.makeText(this, "Kunde inte hämta din vänlista", Toast.LENGTH_SHORT).show()
+            .addOnFailureListener { e ->
+                toast(e.message ?: "Kunde inte hämta din vänlista")
             }
+    }
+
+    private fun toast(msg: String) {
+        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
     }
 }
