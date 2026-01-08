@@ -5,7 +5,14 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="ChatApp"/>
+
     <com.google.android.material.appbar.MaterialToolbar
+
         android:id="@+id/toolbar"
         android:layout_width="0dp"
         android:layout_height="?attr/actionBarSize"
@@ -43,6 +50,8 @@
             android:text="Lägg till vän"
             android:layout_marginStart="4dp"/>
     </LinearLayout>
+
+
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerView"
