@@ -9,12 +9,6 @@ import android.widget.EditText
 import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import com.example.fuma25_chatapp.R
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseAuthUserCollisionException
-import com.google.firebase.auth.userProfileChangeRequest
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.SetOptions
 import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
@@ -23,11 +17,18 @@ import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.credentials.exceptions.GetCredentialException
 import androidx.credentials.exceptions.NoCredentialException
 import androidx.lifecycle.lifecycleScope
+import com.example.fuma25_chatapp.R
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential.Companion.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.auth.userProfileChangeRequest
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 class LoginActivity : AppCompatActivity() {
 
@@ -47,14 +48,14 @@ class LoginActivity : AppCompatActivity() {
 
         val existingUser = auth.currentUser
         if (existingUser != null) {
-            val uid = existingUser.uid
-            val email = existingUser.email.orEmpty()
-
-            if (uid.isNotBlank() && email.isNotBlank()) {
-                ensureUserDocs(uid, email)
+            lifecycleScope.launch {
+                try {
+                    ensureUserDocs()
+                } catch (_: Exception) {
+                    // ignore, we still go to main
+                }
+                goToMain()
             }
-
-            goToMain()
             return
         }
 
@@ -79,17 +80,18 @@ class LoginActivity : AppCompatActivity() {
         setLoading(true)
 
         auth.signInWithEmailAndPassword(email, password)
-            .addOnSuccessListener { result ->
-                val uid = result.user?.uid.orEmpty()
-                val userEmail = result.user?.email.orEmpty()
-
-                if (uid.isNotBlank() && userEmail.isNotBlank()) {
-                    ensureUserDocs(uid, userEmail)
+            .addOnSuccessListener {
+                lifecycleScope.launch {
+                    try {
+                        ensureUserDocs()
+                        setLoading(false)
+                        toast("Inloggad ✅")
+                        goToMain()
+                    } catch (e: Exception) {
+                        setLoading(false)
+                        toast(e.toString())
+                    }
                 }
-
-                setLoading(false)
-                toast("Inloggad ✅")
-                goToMain()
             }
             .addOnFailureListener { e ->
                 setLoading(false)
@@ -102,17 +104,18 @@ class LoginActivity : AppCompatActivity() {
         setLoading(true)
 
         auth.createUserWithEmailAndPassword(email, password)
-            .addOnSuccessListener { result ->
-                val uid = result.user?.uid.orEmpty()
-                val userEmail = result.user?.email.orEmpty()
-
-                if (uid.isNotBlank() && userEmail.isNotBlank()) {
-                    ensureUserDocs(uid, userEmail)
+            .addOnSuccessListener {
+                lifecycleScope.launch {
+                    try {
+                        ensureUserDocs()
+                        setLoading(false)
+                        toast("Konto skapat ✅")
+                        goToMain()
+                    } catch (e: Exception) {
+                        setLoading(false)
+                        toast(e.toString())
+                    }
                 }
-
-                setLoading(false)
-                toast("Konto skapat ✅")
-                goToMain()
             }
             .addOnFailureListener { e ->
                 setLoading(false)
@@ -126,32 +129,63 @@ class LoginActivity : AppCompatActivity() {
             }
     }
 
-    private fun ensureUserDocs(uid: String, email: String) {
+    /**
+     * Ensures Firestore docs exist WITHOUT overwriting existing arrays.
+     *
+     * Important:
+     * - Only create friends/incoming_requests arrays the FIRST time the doc is created.
+     * - If the doc already exists, update only stable fields (uid/email), keep arrays intact.
+     */
+    private suspend fun ensureUserDocs() {
+        val user = auth.currentUser ?: return
+        val uid = user.uid
+        val email = user.email.orEmpty()
         val emailLower = email.lowercase()
-        val nameFromEmail = email.substringBefore("@")
+        val nameFromEmail = if (email.contains("@")) email.substringBefore("@") else "User"
 
-        val user = auth.currentUser
-        if (user?.displayName.isNullOrBlank()) {
-            val profileUpdates = userProfileChangeRequest {
-                displayName = nameFromEmail
-            }
-            user?.updateProfile(profileUpdates)
+        // Ensure displayName exists
+        if (user.displayName.isNullOrBlank()) {
+            val profileUpdates = userProfileChangeRequest { displayName = nameFromEmail }
+            user.updateProfile(profileUpdates).await()
         }
 
-        db.collection("users").document(uid)
-            .set(mapOf("uid" to uid, "email" to emailLower), SetOptions.merge())
+        val userRef = db.collection("users").document(uid)
 
+        // Check if users/{uid} exists
+        val snap = userRef.get().await()
+
+        if (!snap.exists()) {
+            // First time: create with empty arrays
+            userRef.set(
+                mapOf(
+                    "uid" to uid,
+                    "email" to emailLower,
+                    "friends" to emptyList<String>(),
+                    "incoming_requests" to emptyList<String>()
+                ),
+                SetOptions.merge()
+            ).await()
+        } else {
+            // Already exists: do NOT overwrite arrays
+            userRef.set(
+                mapOf(
+                    "uid" to uid,
+                    "email" to emailLower
+                ),
+                SetOptions.merge()
+            ).await()
+        }
+
+        // Public user doc can be merged every time
         db.collection("user-public").document(uid)
             .set(
                 mapOf(
                     "emailLower" to emailLower,
-                    "name" to nameFromEmail
+                    "name" to (user.displayName ?: nameFromEmail)
                 ),
                 SetOptions.merge()
             )
-            .addOnFailureListener { e ->
-                toast("Kunde inte uppdatera profil: ${e.message}")
-            }
+            .await()
     }
 
     private fun googleLogin() {
@@ -168,37 +202,37 @@ class LoginActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             try {
-                val result = credentialManager.getCredential(
-                    this@LoginActivity,
-                    request
-                )
+                val result = credentialManager.getCredential(this@LoginActivity, request)
                 handleResult(result)
             } catch (e: GetCredentialCancellationException) {
                 setLoading(false)
-                Toast.makeText(this@LoginActivity, "Inloggning avbruten", Toast.LENGTH_SHORT).show()
+                toast("Inloggning avbruten")
             } catch (e: NoCredentialException) {
                 setLoading(false)
-                Toast.makeText(this@LoginActivity, "Inga Google-konton på enheten", Toast.LENGTH_SHORT).show()
+                toast("Inga Google-konton på enheten")
             } catch (e: GetCredentialException) {
                 setLoading(false)
-                Toast.makeText(this@LoginActivity, "Error!: ${e.message}", Toast.LENGTH_SHORT).show()
+                toast("Error: ${e.message}")
             }
         }
     }
 
     private fun handleResult(result: GetCredentialResponse) {
-        if (result.credential is CustomCredential && result.credential.type == TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
+        if (result.credential is CustomCredential &&
+            result.credential.type == TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
+        ) {
             try {
-                val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(result.credential.data)
+                val googleIdTokenCredential =
+                    GoogleIdTokenCredential.createFrom(result.credential.data)
                 val idToken = googleIdTokenCredential.idToken
                 authenticateWithFirebase(idToken)
             } catch (e: Exception) {
                 setLoading(false)
-                Toast.makeText(this, "Autentisering misslyckades: ${e.message}", Toast.LENGTH_LONG).show()
+                toast("Autentisering misslyckades: ${e.message}")
             }
         } else {
             setLoading(false)
-            Toast.makeText(this, "Ogiltigt inloggningsformat", Toast.LENGTH_SHORT).show()
+            toast("Ogiltigt inloggningsformat")
         }
     }
 
@@ -207,13 +241,21 @@ class LoginActivity : AppCompatActivity() {
 
         auth.signInWithCredential(firebaseCredential)
             .addOnSuccessListener {
-                setLoading(false)
-                Toast.makeText(this, "Inloggad med Google", Toast.LENGTH_SHORT).show()
-                goToMain()
+                lifecycleScope.launch {
+                    try {
+                        ensureUserDocs()
+                        setLoading(false)
+                        toast("Inloggad med Google ✅")
+                        goToMain()
+                    } catch (e: Exception) {
+                        setLoading(false)
+                        toast(e.toString())
+                    }
+                }
             }
             .addOnFailureListener {
                 setLoading(false)
-                Toast.makeText(this, "Misslyckades: ${it.message}", Toast.LENGTH_SHORT).show()
+                toast("Misslyckades: ${it.message}")
             }
     }
 
@@ -250,7 +292,6 @@ class LoginActivity : AppCompatActivity() {
         Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
     }
 
-    // Minimal Swedish mapping to avoid showing Firebase's English e.message in the UI
     private fun authErrorSv(e: Exception): String {
         return when (e.message) {
             "The supplied auth credential is incorrect, malformed or has expired." ->
@@ -266,3 +307,4 @@ class LoginActivity : AppCompatActivity() {
         }
     }
 }
+

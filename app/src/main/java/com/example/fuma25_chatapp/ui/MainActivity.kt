@@ -10,23 +10,33 @@ import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.fuma25_chatapp.R
 import com.example.fuma25_chatapp.data.ChatRoom
 import com.example.fuma25_chatapp.repository.ChatRepository
+import com.example.fuma25_chatapp.repository.FriendsRepository
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
     private val auth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
+    private val db: FirebaseFirestore by lazy { FirebaseFirestore.getInstance() }
+
     private val repository: ChatRepository by lazy { ChatRepository() }
+    private val friendsRepo: FriendsRepository by lazy { FriendsRepository(auth, db) }
 
     private var roomsListener: ListenerRegistration? = null
+    private var requestsListener: ListenerRegistration? = null
+
     private var lastRoomsCount: Int = 0
+    private var lastRequestsCount: Int = 0
 
     private lateinit var toolbar: MaterialToolbar
     private lateinit var recyclerView: RecyclerView
@@ -47,7 +57,7 @@ class MainActivity : AppCompatActivity() {
         recyclerView = findViewById(R.id.recyclerView)
         fabCreateRoom = findViewById(R.id.fabCreateRoom)
 
-        // Add friend button
+        // Send FRIEND REQUEST (not auto-add)
         findViewById<Button>(R.id.btnAddFriend).setOnClickListener {
             showAddFriendDialog()
         }
@@ -85,12 +95,16 @@ class MainActivity : AppCompatActivity() {
         }
 
         startListeningToRooms(userId)
+        startListeningToFriendRequests(userId)
     }
 
     override fun onStop() {
         super.onStop()
         roomsListener?.remove()
         roomsListener = null
+
+        requestsListener?.remove()
+        requestsListener = null
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -122,6 +136,31 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         )
+    }
+
+    /**
+     * Listen for incoming friend requests and notify the user.
+     * This is NOT a push notification; it updates while the app is open.
+     */
+    private fun startListeningToFriendRequests(userId: String) {
+        requestsListener?.remove()
+        requestsListener = db.collection("users").document(userId)
+            .addSnapshotListener { snap, err ->
+                if (err != null) return@addSnapshotListener
+                if (snap == null || !snap.exists()) return@addSnapshotListener
+
+                val requests =
+                    (snap.get("incoming_requests") as? List<*>)?.filterIsInstance<String>().orEmpty()
+
+                val count = requests.size
+
+                // Only show a toast when it increases (avoid spam)
+                if (count > 0 && count > lastRequestsCount) {
+                    toast("Du har $count vänförfrågan/förfrågningar! 👥")
+                }
+
+                lastRequestsCount = count
+            }
     }
 
     private fun openChatRoom(room: ChatRoom) {
@@ -166,8 +205,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun goToLoginClearBackstack() {
-        val intent = Intent(this, LoginActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        val intent = Intent(this@MainActivity, LoginActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
         }
         startActivity(intent)
         finish()
@@ -235,6 +274,12 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
+    /**
+     * Friend request by email:
+     * - lookup user-public by emailLower
+     * - get uid (doc id)
+     * - send request (incoming_requests) via FriendsRepository
+     */
     private fun showAddFriendDialog() {
         val input = EditText(this).apply {
             hint = "Vännens e-post"
@@ -242,21 +287,52 @@ class MainActivity : AppCompatActivity() {
         }
 
         AlertDialog.Builder(this)
-            .setTitle("Lägg till vän")
+            .setTitle("Skicka vänförfrågan")
             .setView(input)
-            .setPositiveButton("Lägg till") { _, _ ->
-                val email = input.text.toString().trim()
-                val myUid = auth.currentUser?.uid ?: return@setPositiveButton
-
-                repository.addFriendByEmail(
-                    currentUserId = myUid,
-                    friendEmail = email,
-                    onSuccess = { toast("Vän tillagd!") },
-                    onError = { msg -> toast(msg) }
-                )
+            .setPositiveButton("Skicka") { _, _ ->
+                val emailLower = input.text?.toString()?.trim().orEmpty().lowercase()
+                if (emailLower.isBlank()) {
+                    toast("Skriv en e-post")
+                    return@setPositiveButton
+                }
+                sendFriendRequestByEmail(emailLower)
             }
             .setNegativeButton("Avbryt", null)
             .show()
+    }
+
+    private fun sendFriendRequestByEmail(emailLower: String) {
+        val myUid = auth.currentUser?.uid ?: return
+
+        db.collection("user-public")
+            .whereEqualTo("emailLower", emailLower)
+            .limit(1)
+            .get()
+            .addOnSuccessListener { snap ->
+                if (snap.isEmpty) {
+                    toast("Ingen användare hittades med den e-posten")
+                    return@addOnSuccessListener
+                }
+
+                val targetUid = snap.documents.first().id
+
+                if (targetUid == myUid) {
+                    toast("Du kan inte lägga till dig själv 😄")
+                    return@addOnSuccessListener
+                }
+
+                lifecycleScope.launch {
+                    try {
+                        friendsRepo.sendFriendRequest(targetUid)
+                        toast("Vänförfrågan skickad 📩")
+                    } catch (e: Exception) {
+                        toast(e.toString())
+                    }
+                }
+            }
+            .addOnFailureListener { e ->
+                toast(e.toString())
+            }
     }
 
     private companion object {
