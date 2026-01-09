@@ -7,11 +7,10 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.fuma25_chatapp.R
 import com.example.fuma25_chatapp.data.User
+import com.google.android.material.appbar.MaterialToolbar
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldPath
 import com.google.firebase.firestore.FirebaseFirestore
-import com.example.fuma25_chatapp.ui.FriendsAdapter
-
 
 class FriendsListActivity : AppCompatActivity() {
 
@@ -24,6 +23,13 @@ class FriendsListActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_friends_list)
+
+        // Toolbar setup (matches other screens)
+        val toolbar = findViewById<MaterialToolbar>(R.id.toolbar)
+        setSupportActionBar(toolbar)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.title = "Mina vänner"
+        toolbar.setNavigationOnClickListener { finish() }
 
         recyclerView = findViewById(R.id.recyclerViewFriends)
         friendsAdapter = FriendsAdapter()

@@ -13,13 +13,21 @@
         <item name="android:padding">@dimen/screen_padding</item>
     </style>
 
-    <!-- Base button -->
-    <style name="PrimaryButton">
+    <!-- ✅ Base button (Material3, consistent text size) -->
+    <style name="PrimaryButton" parent="Widget.Material3.Button">
         <item name="android:layout_height">@dimen/button_height</item>
         <item name="android:layout_width">match_parent</item>
+
+        <!-- Text -->
         <item name="android:textAllCaps">false</item>
         <item name="android:textSize">@dimen/text_normal</item>
+
+        <!-- Spacing -->
         <item name="android:layout_marginTop">@dimen/item_spacing</item>
+
+        <!-- Colors -->
+        <item name="backgroundTint">@color/c_primary</item>
+        <item name="android:textColor">@color/c_on_primary</item>
     </style>
 
 </resources>

@@ -1,20 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
 
     <!-- App name -->
-    <string name="app_name">FUMA25 ChatApp</string>
+    <string name="app_name">FUMA25 ChattApp</string>
 
-    <!-- Chat room UI -->
+    <!-- Main screen -->
+    <string name="main_title">ChattApp</string>
+    <string name="friends_list">Vänlista</string>
+    <string name="add_friend">Lägg till vän</string>
+
+    <!-- Login screen -->
+    <string name="login_subtitle">Logga in eller skapa konto</string>
+    <string name="email">E-post</string>
+    <string name="password">Lösenord</string>
+    <string name="login">Logga in</string>
+    <string name="register">Skapa konto</string>
+    <string name="login_with_google">Logga in med Google</string>
+
+    <!-- Chat room list -->
     <string name="room_title_placeholder">Chattrum</string>
+
+    <!-- Used in item_chat_room.xml as default text -->
     <string name="members_placeholder">Medlemmar: 0</string>
+
+    <!-- Used in code when you set the real member count -->
     <string name="members_format">Medlemmar: %1$d</string>
-    <string name="you_badge">(du)</string>
+
+    <string name="you_badge">Rum skapat av dig</string>
     <string name="long_press_to_delete">Håll inne för att radera</string>
     <string name="untitled_chat">Namnlöst chattrum</string>
+
+    <!-- Main actions -->
+    <string name="skapa_chattrum">Skapa chattrum</string>
+    <string name="bjud_in_van">Bjud in vän</string>
 
     <!-- Chat screen -->
     <string name="hint_skriv_meddelande">Skriv ett meddelande</string>
     <string name="skicka">Skicka</string>
-    <string name="bjud_in_van">Bjud in vän</string>
 
-    <string name="web_client_id">938138367374-2rhre2e7ae2vnsi3v91m2mncouq3ngvo.apps.googleusercontent.com</string>
+    <!-- Google / Firebase (NOT UI text) -->
+    <string name="web_client_id" translatable="false">
+        938138367374-2rhre2e7ae2vnsi3v91m2mncouq3ngvo.apps.googleusercontent.com
+    </string>
+
 </resources>
+

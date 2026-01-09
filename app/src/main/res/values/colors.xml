@@ -1,15 +1,23 @@
 <resources>
-    <color name="c_primary">#6C4DFF</color>
+
+    <!-- Primary (olive green) -->
+    <color name="c_primary">#6B8E23</color> <!-- OliveDrab -->
     <color name="c_on_primary">#FFFFFF</color>
 
-    <color name="c_bg">#121218</color>
-    <color name="c_surface">#1E1E24</color>
-    <color name="c_on_surface">#FFFFFF</color>
-    <color name="c_on_surface_muted">#B8B8C7</color>
+    <!-- Backgrounds -->
+    <color name="c_bg">#11140F</color>        <!-- very dark olive -->
+    <color name="c_surface">#1A1F17</color>   <!-- dark olive surface -->
 
-    <color name="c_outline">#2C2C35</color>
+    <!-- Text -->
+    <color name="c_on_surface">#F2F4EF</color>        <!-- warm off-white -->
+    <color name="c_on_surface_muted">#A9B0A2</color>  <!-- muted olive-gray -->
 
-    <color name="bubble_bg_me">#F3E5F5</color>
-    <color name="bubble_bg_other">#FFFFFF</color>
+    <!-- Outline / dividers -->
+    <color name="c_outline">#2F362B</color>
+
+    <!-- Chat bubbles -->
+    <color name="bubble_bg_me">#6B8E23</color>        <!-- olive (you) -->
+    <color name="bubble_bg_other">#2A3026</color>    <!-- dark muted olive -->
 
 </resources>
+

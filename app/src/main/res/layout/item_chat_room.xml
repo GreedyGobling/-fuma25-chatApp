@@ -6,15 +6,40 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginVertical="@dimen/item_spacing"
+    android:clipToPadding="false"
+    android:clipChildren="false"
     app:cardCornerRadius="@dimen/button_radius"
     app:cardElevation="6dp"
-    app:cardUseCompatPadding="true">
+    app:cardUseCompatPadding="false"
+    app:cardPreventCornerOverlap="false">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="@dimen/section_spacing">
+        android:padding="@dimen/section_spacing"
+        android:clipToPadding="false"
+        android:clipChildren="false">
 
+        <!-- Badge (top-right) -->
+        <TextView
+            android:id="@+id/textYouBadge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/you_badge"
+            android:textSize="@dimen/text_small"
+            android:textStyle="bold"
+            android:textColor="@color/c_on_surface"
+            android:background="@drawable/bg_chip"
+            android:paddingHorizontal="@dimen/section_spacing"
+            android:paddingVertical="6dp"
+            android:minHeight="32dp"
+            android:gravity="center"
+            android:layout_marginTop="2dp"
+            android:visibility="gone"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <!-- Title -->
         <TextView
             android:id="@+id/textTitle"
             android:layout_width="0dp"
@@ -27,23 +52,10 @@
             android:ellipsize="end"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toStartOf="@+id/textYouBadge" />
+            app:layout_constraintEnd_toStartOf="@id/textYouBadge"
+            app:layout_constraintHorizontal_bias="0" />
 
-        <TextView
-            android:id="@+id/textYouBadge"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/you_badge"
-            android:textSize="@dimen/text_small"
-            android:textStyle="bold"
-            android:textColor="@color/c_on_surface"
-            android:paddingHorizontal="@dimen/section_spacing"
-            android:paddingVertical="@dimen/item_spacing"
-            android:background="@drawable/bg_card"
-            android:visibility="gone"
-            app:layout_constraintBaseline_toBaselineOf="@id/textTitle"
-            app:layout_constraintEnd_toEndOf="parent" />
-
+        <!-- Member count -->
         <TextView
             android:id="@+id/textMembers"
             android:layout_width="0dp"
@@ -58,6 +70,7 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent" />
 
+        <!-- Delete hint -->
         <TextView
             android:id="@+id/textDeleteHint"
             android:layout_width="0dp"
