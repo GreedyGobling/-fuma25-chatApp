@@ -8,6 +8,7 @@ import android.view.MenuItem
 import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
+import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
@@ -17,11 +18,12 @@ import com.example.fuma25_chatapp.R
 import com.example.fuma25_chatapp.data.ChatRoom
 import com.example.fuma25_chatapp.repository.ChatRepository
 import com.example.fuma25_chatapp.repository.FriendsRepository
+import com.example.fuma25_chatapp.viewmodel.MainViewModel
+import com.example.fuma25_chatapp.viewmodel.MainViewModelFactory
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
@@ -29,14 +31,12 @@ class MainActivity : AppCompatActivity() {
     private val auth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
     private val db: FirebaseFirestore by lazy { FirebaseFirestore.getInstance() }
 
-    private val repository: ChatRepository by lazy { ChatRepository() }
+    private val chatRepo: ChatRepository by lazy { ChatRepository() }
     private val friendsRepo: FriendsRepository by lazy { FriendsRepository(auth, db) }
 
-    private var roomsListener: ListenerRegistration? = null
-    private var requestsListener: ListenerRegistration? = null
-
-    private var lastRoomsCount: Int = 0
-    private var lastRequestsCount: Int = 0
+    private val viewModel: MainViewModel by viewModels {
+        MainViewModelFactory(db, chatRepo)
+    }
 
     private lateinit var toolbar: MaterialToolbar
     private lateinit var recyclerView: RecyclerView
@@ -57,16 +57,6 @@ class MainActivity : AppCompatActivity() {
         recyclerView = findViewById(R.id.recyclerView)
         fabCreateRoom = findViewById(R.id.fabCreateRoom)
 
-        // Send FRIEND REQUEST (not auto-add)
-        findViewById<Button>(R.id.btnAddFriend).setOnClickListener {
-            showAddFriendDialog()
-        }
-
-        // Open friends list activity
-        findViewById<Button>(R.id.btnFriendsList).setOnClickListener {
-            startActivity(Intent(this, FriendsListActivity::class.java))
-        }
-
         setSupportActionBar(toolbar)
 
         val userId = auth.currentUser?.uid.orEmpty()
@@ -80,31 +70,41 @@ class MainActivity : AppCompatActivity() {
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = adapter
 
-        fabCreateRoom.setOnClickListener {
-            showCreateRoomDialog()
+        findViewById<Button>(R.id.btnAddFriend).setOnClickListener { showAddFriendDialog() }
+        findViewById<Button>(R.id.btnFriendsList).setOnClickListener {
+            startActivity(Intent(this, FriendsListActivity::class.java))
+        }
+        fabCreateRoom.setOnClickListener { showCreateRoomDialog() }
+
+        // Observers
+        viewModel.rooms.observe(this) { rooms ->
+            adapter.submitList(rooms)
+        }
+
+        viewModel.toastEvent.observe(this) { event ->
+            event.getContentIfNotHandled()?.let { toast(it) }
+        }
+
+        viewModel.friendRequestsCountEvent.observe(this) { event ->
+            event.getContentIfNotHandled()?.let { count ->
+                toast("Du har $count vänförfrågan/förfrågningar! 👥")
+            }
         }
     }
 
     override fun onStart() {
         super.onStart()
-
         val userId = auth.currentUser?.uid
         if (userId.isNullOrBlank()) {
             goToLoginClearBackstack()
             return
         }
-
-        startListeningToRooms(userId)
-        startListeningToFriendRequests(userId)
+        viewModel.start(userId)
     }
 
     override fun onStop() {
         super.onStop()
-        roomsListener?.remove()
-        roomsListener = null
-
-        requestsListener?.remove()
-        requestsListener = null
+        viewModel.stop()
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -122,47 +122,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun startListeningToRooms(userId: String) {
-        roomsListener?.remove()
-        roomsListener = repository.listenToChatRooms(
-            userId = userId,
-            onUpdate = { rooms ->
-                lastRoomsCount = rooms.size
-                adapter.submitList(rooms)
-            },
-            onError = { msg ->
-                if (lastRoomsCount == 0) {
-                    toast("Error loading rooms: $msg")
-                }
-            }
-        )
-    }
-
-    /**
-     * Listen for incoming friend requests and notify the user.
-     * This is NOT a push notification; it updates while the app is open.
-     */
-    private fun startListeningToFriendRequests(userId: String) {
-        requestsListener?.remove()
-        requestsListener = db.collection("users").document(userId)
-            .addSnapshotListener { snap, err ->
-                if (err != null) return@addSnapshotListener
-                if (snap == null || !snap.exists()) return@addSnapshotListener
-
-                val requests =
-                    (snap.get("incoming_requests") as? List<*>)?.filterIsInstance<String>().orEmpty()
-
-                val count = requests.size
-
-                // Only show a toast when it increases (avoid spam)
-                if (count > 0 && count > lastRequestsCount) {
-                    toast("Du har $count vänförfrågan/förfrågningar! 👥")
-                }
-
-                lastRequestsCount = count
-            }
-    }
-
     private fun openChatRoom(room: ChatRoom) {
         val intent = Intent(this, ChatActivity::class.java).apply {
             putExtra(ChatActivity.EXTRA_CHAT_ROOM_ID, room.id)
@@ -177,25 +136,11 @@ class MainActivity : AppCompatActivity() {
             .setMessage("Vill du radera \"${room.title}\"?\nAlla meddelanden i rummet raderas också.")
             .setNegativeButton("Avbryt", null)
             .setPositiveButton("Radera") { _, _ ->
-                deleteRoom(room)
+                fabCreateRoom.isEnabled = false
+                viewModel.deleteRoom(room.id)
+                fabCreateRoom.isEnabled = true
             }
             .show()
-    }
-
-    private fun deleteRoom(room: ChatRoom) {
-        fabCreateRoom.isEnabled = false
-
-        repository.deleteChatRoom(
-            chatRoomId = room.id,
-            onSuccess = {
-                fabCreateRoom.isEnabled = true
-                toast("Chattrum raderat")
-            },
-            onError = { msg ->
-                fabCreateRoom.isEnabled = true
-                toast("Kunde inte radera: $msg")
-            }
-        )
     }
 
     private fun logout() {
@@ -236,7 +181,19 @@ class MainActivity : AppCompatActivity() {
                     toast("Skriv ett namn (minst 2 tecken).")
                     return@setPositiveButton
                 }
-                createRoom(userId, validatedTitle)
+
+                fabCreateRoom.isEnabled = false
+                viewModel.createRoom(userId, validatedTitle) { roomId ->
+                    fabCreateRoom.isEnabled = true
+                    openChatRoom(
+                        ChatRoom(
+                            id = roomId,
+                            title = validatedTitle,
+                            createdBy = userId,
+                            members = listOf(userId)
+                        )
+                    )
+                }
             }
             .show()
     }
@@ -248,37 +205,13 @@ class MainActivity : AppCompatActivity() {
         return t
     }
 
-    private fun createRoom(userId: String, title: String) {
-        fabCreateRoom.isEnabled = false
-
-        repository.createChatRoom(
-            title = title,
-            creatorUserId = userId,
-            onSuccess = { roomId ->
-                fabCreateRoom.isEnabled = true
-                toast("Chattrum skapat")
-
-                openChatRoom(
-                    ChatRoom(
-                        id = roomId,
-                        title = title,
-                        createdBy = userId,
-                        members = listOf(userId)
-                    )
-                )
-            },
-            onError = { msg ->
-                fabCreateRoom.isEnabled = true
-                toast("Kunde inte skapa rum: $msg")
-            }
-        )
-    }
-
     /**
      * Friend request by email:
      * - lookup user-public by emailLower
      * - get uid (doc id)
-     * - send request (incoming_requests) via FriendsRepository
+     * - send request via FriendsRepository (still OK to keep here)
+     *
+     * (Bonus: can be moved into a ViewModel too, but this is already thin UI logic)
      */
     private fun showAddFriendDialog() {
         val input = EditText(this).apply {
