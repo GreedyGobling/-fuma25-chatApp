@@ -1,12 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Base application theme -->
     <style name="Base.Theme.Fuma25chatapp" parent="Theme.Material3.DayNight.NoActionBar">
-        <item name="android:windowBackground">@color/c_bg</item>
+
+        <!-- Primary -->
         <item name="colorPrimary">@color/c_primary</item>
         <item name="colorOnPrimary">@color/c_on_primary</item>
+
+        <!-- Background/window -->
+        <item name="android:windowBackground">@color/c_bg</item>
+        <item name="android:colorBackground">@color/c_bg</item>
+
+        <!-- Surfaces -->
+        <item name="colorSurface">@color/c_surface</item>
+        <item name="colorOnSurface">@color/c_on_surface</item>
+
+        <item name="colorSurfaceVariant">@color/c_surface</item>
+        <item name="colorOnSurfaceVariant">@color/c_on_surface_muted</item>
+
+        <!-- Outline -->
+        <item name="colorOutline">@color/c_outline</item>
+
+        <!-- Status/Nav bars -->
+        <item name="android:statusBarColor">@color/c_bg</item>
+        <item name="android:navigationBarColor">@color/c_bg</item>
+
     </style>
 
     <style name="Theme.Fuma25chatapp" parent="Base.Theme.Fuma25chatapp" />
 
 </resources>
+

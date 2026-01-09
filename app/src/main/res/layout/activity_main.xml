@@ -7,22 +7,18 @@
     android:background="@color/c_bg"
     android:fitsSystemWindows="true">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:gravity="center"
-        android:text="ChatApp"/>
-
     <com.google.android.material.appbar.MaterialToolbar
-
         android:id="@+id/toolbar"
         android:layout_width="0dp"
         android:layout_height="?attr/actionBarSize"
         android:backgroundTint="@color/c_primary"
+        android:paddingHorizontal="@dimen/screen_padding"
+        app:contentInsetStart="@dimen/screen_padding"
+        app:contentInsetEnd="@dimen/screen_padding"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:title="Grupp 5 ChattApp"
+        app:title="@string/main_title"
         app:titleTextColor="@android:color/white" />
 
     <LinearLayout
@@ -42,9 +38,11 @@
             android:layout_width="0dp"
             android:layout_height="@dimen/button_height"
             android:layout_weight="1"
-            android:layout_marginTop="0dp"
-            android:layout_marginEnd="@dimen/item_spacing"
-            android:text="Vänlista"/>
+            android:text="@string/friends_list" />
+
+        <Space
+            android:layout_width="@dimen/item_spacing"
+            android:layout_height="1dp" />
 
         <Button
             android:id="@+id/btnAddFriend"
@@ -52,12 +50,8 @@
             android:layout_width="0dp"
             android:layout_height="@dimen/button_height"
             android:layout_weight="1"
-            android:layout_marginTop="0dp"
-            android:layout_marginStart="@dimen/item_spacing"
-            android:text="Lägg till vän"/>
+            android:text="@string/add_friend" />
     </LinearLayout>
-
-
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerView"
@@ -76,10 +70,10 @@
         android:id="@+id/fabCreateRoom"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:contentDescription="Skapa chattrum"
+        android:layout_margin="@dimen/screen_padding"
+        android:contentDescription="@string/skapa_chattrum"
         android:src="@android:drawable/ic_input_add"
         android:elevation="12dp"
-        android:layout_margin="@dimen/screen_padding"
         app:backgroundTint="@color/c_primary"
         app:tint="@android:color/white"
         app:layout_constraintBottom_toBottomOf="parent"

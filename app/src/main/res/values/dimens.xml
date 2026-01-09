@@ -2,20 +2,20 @@
 <resources>
 
     <!-- Global spacing -->
-    <dimen name="screen_padding">16dp</dimen>
-    <dimen name="section_spacing">12dp</dimen>
-    <dimen name="item_spacing">8dp</dimen>
+    <dimen name="screen_padding">20dp</dimen>
+    <dimen name="section_spacing">16dp</dimen>
+    <dimen name="item_spacing">12dp</dimen>
 
     <!-- Message bubbles -->
-    <dimen name="message_max_width">280dp</dimen>
+    <dimen name="message_max_width">300dp</dimen>
 
     <!-- Buttons -->
-    <dimen name="button_height">48dp</dimen>
-    <dimen name="button_radius">24dp</dimen>
+    <dimen name="button_height">52dp</dimen>
+    <dimen name="button_radius">26dp</dimen>
 
     <!-- Text -->
     <dimen name="text_normal">16sp</dimen>
     <dimen name="text_small">14sp</dimen>
-    <dimen name="text_title">20sp</dimen>
+    <dimen name="text_title">22sp</dimen>
 
 </resources>

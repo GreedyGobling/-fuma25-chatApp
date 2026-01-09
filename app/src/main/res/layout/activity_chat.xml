@@ -4,28 +4,45 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/c_bg">
+    android:background="@color/c_bg"
+    android:fitsSystemWindows="true">
+
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar"
+        android:layout_width="0dp"
+        android:layout_height="?attr/actionBarSize"
+        android:backgroundTint="@color/c_primary"
+        app:contentInsetStart="@dimen/screen_padding"
+        app:contentInsetEnd="@dimen/screen_padding"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:title="@string/room_title_placeholder"
+        app:titleTextColor="@android:color/white"
+        app:navigationIcon="@android:drawable/ic_menu_revert" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerViewMessages"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:paddingStart="@dimen/screen_padding"
-        android:paddingEnd="@dimen/screen_padding"
-        android:paddingTop="@dimen/screen_padding"
-        android:paddingBottom="@dimen/item_spacing"
         android:clipToPadding="false"
-        app:layout_constraintTop_toTopOf="parent"
+        android:paddingHorizontal="@dimen/screen_padding"
+        android:paddingTop="@dimen/item_spacing"
+        android:paddingBottom="@dimen/screen_padding"
+        app:layout_constraintTop_toBottomOf="@id/toolbar"
         app:layout_constraintBottom_toTopOf="@id/messageContainer"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+        app:layout_constraintEnd_toEndOf="parent" />
 
     <LinearLayout
         android:id="@+id/messageContainer"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:padding="@dimen/screen_padding"
+        android:paddingStart="@dimen/screen_padding"
+        android:paddingEnd="@dimen/screen_padding"
+        android:paddingTop="@dimen/screen_padding"
+        android:paddingBottom="@dimen/screen_padding"
         android:background="@color/c_bg"
         android:gravity="center_vertical"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -42,7 +59,7 @@
             android:paddingHorizontal="@dimen/screen_padding"
             android:textColor="@color/c_on_surface"
             android:textColorHint="@color/c_on_surface_muted"
-            android:inputType="textCapSentences"/>
+            android:inputType="textCapSentences" />
 
         <ImageButton
             android:id="@+id/btnInviteFriend"
@@ -51,7 +68,7 @@
             android:layout_marginStart="@dimen/item_spacing"
             android:src="@android:drawable/ic_menu_add"
             android:background="@drawable/bg_card"
-            android:contentDescription="@string/bjud_in_van"/>
+            android:contentDescription="@string/bjud_in_van" />
 
         <ImageButton
             android:id="@+id/buttonSend"
@@ -60,7 +77,7 @@
             android:layout_marginStart="@dimen/item_spacing"
             android:src="@android:drawable/ic_menu_send"
             android:background="@drawable/bg_card"
-            android:contentDescription="@string/skicka"/>
+            android:contentDescription="@string/skicka" />
 
     </LinearLayout>
 

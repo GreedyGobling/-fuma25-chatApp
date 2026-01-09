@@ -8,7 +8,6 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
-import com.google.firebase.firestore.SetOptions
 
 class ChatRepository {
 
@@ -96,7 +95,7 @@ class ChatRepository {
      */
     fun sendMessage(
         chatRoomId: String,
-        message: com.example.fuma25_chatapp.data.Message,
+        message: Message,
         onSuccess: () -> Unit,
         onError: (String) -> Unit
     ) {
@@ -105,7 +104,6 @@ class ChatRepository {
             return
         }
 
-        // SKAPA DENNA MAP NOGA:
         val messageData = mapOf(
             "text" to message.text,
             "senderId" to message.senderId,
@@ -116,7 +114,7 @@ class ChatRepository {
         val roomRef = db.collection("chat-rooms").document(chatRoomId)
 
         roomRef.collection("messages")
-            .add(messageData) //
+            .add(messageData)
             .addOnSuccessListener {
                 roomRef.update(
                     "lastMessage", message.text,
@@ -184,59 +182,7 @@ class ChatRepository {
     }
 
     /**
-     * Find a friend by email (uses user-public collection).
-     *
-     * Notes:
-     * - Prevent adding yourself.
-     * - Use merge so the users/{uid} doc can be created if it doesn't exist yet.
-     */
-    fun addFriendByEmail(
-        currentUserId: String,
-        friendEmail: String,
-        onSuccess: () -> Unit,
-        onError: (String) -> Unit
-    ) {
-        val emailLower = friendEmail.trim().lowercase()
-        if (emailLower.isBlank()) {
-            onError("Skriv en e-postadress")
-            return
-        }
-
-        db.collection("user-public")
-            .whereEqualTo("emailLower", emailLower)
-            .limit(1)
-            .get()
-            .addOnSuccessListener { snapshot ->
-                if (snapshot.isEmpty) {
-                    onError("Ingen användare hittades")
-                    return@addOnSuccessListener
-                }
-
-                val friendUid = snapshot.documents.first().id
-
-                if (friendUid == currentUserId) {
-                    onError("Du kan inte lägga till dig själv")
-                    return@addOnSuccessListener
-                }
-
-                // Create doc if missing + add friend uid without duplicates
-                db.collection("users").document(currentUserId)
-                    .set(
-                        mapOf("friends" to FieldValue.arrayUnion(friendUid)),
-                        SetOptions.merge()
-                    )
-                    .addOnSuccessListener { onSuccess() }
-                    .addOnFailureListener { e ->
-                        onError(e.message ?: "Kunde inte spara vän")
-                    }
-            }
-            .addOnFailureListener { e ->
-                onError(e.message ?: "Sökning misslyckades")
-            }
-    }
-
-    /**
-     * Invite a friend to a chat room.
+     * Invite a friend to a chat room (optional).
      */
     fun inviteFriendToRoom(
         chatRoomId: String,
